@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#f4f9ff"/><stop offset="0.5" stop-color="#e7f1fc"/><stop offset="1" stop-color="#dbeafc"/>
+    </linearGradient>
+    <linearGradient id="txt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7aa9e8"/><stop offset="1" stop-color="#4f86d6"/>
+    </linearGradient>
+    <linearGradient id="sh" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eaf4ff"/><stop offset="1" stop-color="#bcd9f7"/>
+    </linearGradient>
+    <filter id="ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#4a7fc0" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <rect width="900" height="560" fill="url(#paper)"/>
+  <!-- 背景浮起的软块 -->
+  <g fill="#cfe4fb" fill-opacity="0.75">
+    <ellipse cx="120" cy="86" rx="86" ry="34"/>
+    <ellipse cx="800" cy="70" rx="70" ry="28"/>
+    <ellipse cx="838" cy="486" rx="120" ry="46"/>
+    <ellipse cx="92" cy="500" rx="104" ry="40"/>
+    <ellipse cx="690" cy="120" rx="46" ry="20"/>
+  </g>
+  <g fill="#ffffff" fill-opacity="0.65">
+    <ellipse cx="230" cy="150" rx="60" ry="22"/>
+    <ellipse cx="700" cy="440" rx="80" ry="28"/>
+  </g>
+
+  <!-- 底部云海 -->
+  <g fill="url(#sh)">
+    <path d="M0 470c90-34 150-6 232-30s130-52 214-30 128 58 214 34 194-40 240-12v128H0z"/>
+    <path d="M0 516c120-26 190 6 286-14s170-30 262-6 216 22 352-10v74H0z" fill="#ffffff" fill-opacity="0.85"/>
+  </g>
+
+  <!-- REF 字样 -->
+  <text x="450" y="300" text-anchor="middle" font-family="Arial,Helvetica,sans-serif"
+        font-size="150" font-weight="700" letter-spacing="12" fill="url(#txt)">REF</text>
+  <text x="450" y="352" text-anchor="middle" font-family="Arial,Helvetica,sans-serif"
+        font-size="20" letter-spacing="6" fill="#8fb4dd">COMMAND REFERENCE</text>
+
+  <!-- 右下角盾牌 -->
+  <g transform="translate(688 366)" filter="url(#ds)">
+    <path d="M76 0c26 16 50 22 76 24 0 66-24 106-76 130C24 130 0 90 0 24 26 22 50 16 76 0z"
+          fill="#ffffff" stroke="#a9cbf0" stroke-width="3"/>
+    <path d="M40 74l24 24 48-52" fill="none" stroke="#6fa3e0" stroke-width="12"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- 右上角文档 -->
+  <g transform="translate(646 62)" opacity="0.9">
+    <path d="M0 0h44l18 18v54H0z" fill="#ffffff" stroke="#b7d4f2" stroke-width="3"/>
+    <path d="M44 0v18h18" fill="none" stroke="#b7d4f2" stroke-width="3"/>
+    <path d="M10 30h40M10 42h40M10 54h26" stroke="#cfe0f5" stroke-width="4"/>
+  </g>
+</svg>

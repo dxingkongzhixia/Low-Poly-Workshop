@@ -1,0 +1,20 @@
+:root{color-scheme:dark;font-family:system-ui,"Microsoft YaHei",sans-serif;background:#111720;color:#e8f1f5}
+*{box-sizing:border-box}
+body{margin:0;height:100vh;display:flex;overflow:hidden}
+aside{width:280px;padding:20px 18px;background:#182431;border-right:1px solid #3b5766;overflow:auto;z-index:2}
+h1{font-size:20px;margin:0 0 4px;letter-spacing:.06em}
+h2{font-size:12px;letter-spacing:.14em;color:#a9cfdc;margin:22px 0 8px}
+.sub{font-size:12px;color:#93aeb9;line-height:1.5;margin:0 0 8px}
+code{background:#22323f;padding:1px 5px;border-radius:3px;font-size:11px}
+label{display:block;font-size:12px;color:#cbe0e6;margin:18px 0 6px}
+select{width:100%;margin-top:6px;padding:8px;background:#233b49;color:#eaf3f5;border:1px solid #5a7985;border-radius:3px}
+.actions{display:flex;flex-wrap:wrap;gap:6px}
+button{background:#233b49;color:#eaf3f5;border:1px solid #5a7985;border-radius:3px;padding:7px 10px;cursor:pointer;font-size:12px}
+button:hover{background:#345669}
+button.on{background:#3d6f86;border-color:#8fc4d6}
+pre{font:11px/1.6 ui-monospace,Consolas,monospace;color:#c7e7ed;white-space:pre-wrap;margin:0}
+.tip{margin-top:26px;font-size:12px;color:#8ea9b4}
+main{position:relative;flex:1;min-width:0}
+canvas{display:block;width:100%;height:100%}
+#loading{position:absolute;inset:0;display:grid;place-items:center;background:#111720;color:#a9cfdc;z-index:1}
+#loading.done{display:none}

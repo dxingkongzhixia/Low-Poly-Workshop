@@ -1,0 +1,48 @@
+/* 模型导入页的样式（在 shell.css 之后加载） */
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:Arial,"PingFang SC","Microsoft YaHei",sans-serif;font-size:12px}
+canvas{display:block}
+#stage{position:fixed;inset:0;z-index:0}
+#panel{position:fixed;right:0;top:0;bottom:0;width:352px;background:var(--glass);
+  border-left:1px solid var(--line);display:flex;flex-direction:column;z-index:20}
+#panel header{padding:12px 14px 10px;border-bottom:1px solid var(--line)}
+#panel header h1{margin:0;font-size:14.5px;letter-spacing:.08em;font-weight:800}
+#panel header p{margin:7px 0 0;font-size:11px;color:var(--dim);line-height:1.65}
+#panel header b{color:var(--accent)}
+#scroll{overflow:auto;flex:1;padding:12px 12px 40px}
+.sec{border:1px solid var(--line);border-radius:7px;margin-bottom:11px;background:var(--row)}
+.sec>h2{margin:0;padding:8px 10px;font-size:11.5px;background:var(--panel2);color:var(--accent);
+  font-weight:700;display:flex;justify-content:space-between;gap:8px}
+.sec>h2 span{color:var(--dim);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec .body{padding:10px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.row label{color:var(--dim);white-space:nowrap}
+.row .val{color:var(--ink);font-variant-numeric:tabular-nums;font-size:11px;min-width:36px;text-align:right}
+input[type=range]{flex:1;accent-color:var(--accent);height:16px}
+input[type=color]{width:36px;height:20px;padding:0;border:1px solid var(--line);background:none;border-radius:3px;cursor:pointer}
+select{background:var(--raise);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-size:11.5px;width:100%}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.btn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:5px;
+  padding:7px 8px;font-size:11.5px;cursor:pointer}
+.btn:hover{background:var(--hover);border-color:var(--accent)}
+.btn.primary{background:var(--ok-bg2);border-color:var(--ok-line)}
+#drop{border:1px dashed var(--line);border-radius:6px;padding:12px 8px;text-align:center;
+  color:var(--dim);font-size:11px;transition:.15s}
+#drop.hot{border-color:var(--green);color:var(--green);background:var(--ok-bg)}
+.note{margin:0;font-size:10.5px;color:var(--dim);line-height:1.7}
+.note code{color:var(--accent);background:var(--raise);padding:1px 4px;border-radius:3px}
+#hud{position:fixed;left:14px;top:14px;z-index:15;font-size:11px;color:var(--dim);
+  background:var(--note);border:1px solid var(--line);border-radius:7px;padding:9px 11px;line-height:1.7}
+#hud b{color:var(--ink);font-size:12.5px;letter-spacing:.04em}
+#hud #stats{margin-top:5px}
+#hud #stats b{color:var(--green);font-size:12px}
+#axis{position:fixed;left:14px;bottom:14px;z-index:15;font-size:11px;color:var(--dim);
+  background:var(--note);border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+#toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:40;background:var(--ok-bg2);
+  border:1px solid var(--ok-line);color:var(--ok-ink);padding:8px 16px;border-radius:6px;font-size:12px;
+  opacity:0;transition:.25s;pointer-events:none}
+#toast.on{opacity:1}
+body.has-shell #hud{ top:calc(var(--shell-h) + 10px) !important; }
+body.has-shell #panel{ top:var(--shell-h) !important; }
+body.has-shell #toast{ top:calc(var(--shell-h) + 8px) !important; }
+@media (max-width:820px){ #panel{width:100%;height:48%;top:auto;bottom:0;border-left:0;border-top:1px solid var(--line)} #axis{display:none} }

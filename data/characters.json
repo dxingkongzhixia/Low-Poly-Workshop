@@ -1,0 +1,684 @@
+{
+  "schema": "lowpoly-workshop/characters@1",
+  "generatedBy": "pages/character-lab.html 加载时自动发布",
+  "note": "原作角色的权威索引。低模是程序化生成的（给 XT(id) 就能拿到几何），高模是烘焙好的 THREE.Object3D.toJSON。",
+  "low": [
+    {
+      "id": "lappland",
+      "label": "拉普兰德",
+      "build": "XT(\"lappland\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.lappland",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.36,
+        "armY": 1.2183,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          1.05,
+          -0.1
+        ],
+        "tail": [
+          0,
+          0.77,
+          -0.23
+        ]
+      },
+      "palette": {
+        "hair": 14542308,
+        "shade": 10333105,
+        "coat": 2502714,
+        "trim": 14804449,
+        "eye": 12238784
+      },
+      "meshCount": 25,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "tail",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "texas",
+      "label": "德克萨斯",
+      "build": "XT(\"texas\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.texas",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.36,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          1.05,
+          -0.1
+        ],
+        "tail": [
+          0,
+          0.77,
+          -0.23
+        ]
+      },
+      "palette": {
+        "hair": 3159104,
+        "shade": 1646892,
+        "coat": 15067361,
+        "trim": 12208700,
+        "eye": 16034882
+      },
+      "meshCount": 19,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "tail",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "exusiai",
+      "label": "能天使",
+      "build": "XT(\"exusiai\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.exusiai",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.36,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          1.05,
+          -0.1
+        ],
+        "tail": null
+      },
+      "palette": {
+        "hair": 8994129,
+        "shade": 5319230,
+        "coat": 15197916,
+        "trim": 13971299,
+        "eye": 15307842
+      },
+      "meshCount": 17,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "croissant",
+      "label": "可颂",
+      "build": "XT(\"croissant\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.croissant",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.36,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          1.05,
+          -0.1
+        ],
+        "tail": [
+          0,
+          0.77,
+          -0.25
+        ]
+      },
+      "palette": {
+        "hair": 15769680,
+        "shade": 13202743,
+        "coat": 2700856,
+        "trim": 6857876,
+        "eye": 8632688
+      },
+      "meshCount": 17,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "tail",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "sora",
+      "label": "空",
+      "build": "XT(\"sora\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.sora",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.36,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          1.05,
+          -0.1
+        ],
+        "tail": [
+          0,
+          0.77,
+          -0.23
+        ]
+      },
+      "palette": {
+        "hair": 16766315,
+        "shade": 13933380,
+        "coat": 3288373,
+        "trim": 13123416,
+        "eye": 14120346
+      },
+      "meshCount": 16,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "tail",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "mostima",
+      "label": "莫斯提马",
+      "build": "XT(\"mostima\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.mostima",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.36,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          1.05,
+          -0.1
+        ],
+        "tail": [
+          0,
+          0.77,
+          -0.25
+        ]
+      },
+      "palette": {
+        "hair": 3165049,
+        "shade": 2110031,
+        "coat": 3682619,
+        "trim": 12630711,
+        "eye": 4375243
+      },
+      "meshCount": 20,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "tail",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "chen",
+      "label": "陈",
+      "build": "XT(\"chen\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.chen",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.36,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          1.05,
+          -0.1
+        ],
+        "tail": null
+      },
+      "palette": {
+        "hair": 3161963,
+        "shade": 1647939,
+        "coat": 2240318,
+        "trim": 15903808,
+        "eye": 13257061
+      },
+      "meshCount": 17,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "hoshiguma",
+      "label": "星熊",
+      "build": "XT(\"hoshiguma\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.hoshiguma",
+      "rig": {
+        "bodyY": 0.0549,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.36,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          1.05,
+          -0.1
+        ],
+        "tail": null
+      },
+      "palette": {
+        "hair": 3313022,
+        "shade": 1528909,
+        "coat": 2436144,
+        "trim": 7831933,
+        "eye": 10398839
+      },
+      "meshCount": 18,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "swire",
+      "label": "诗怀雅",
+      "build": "XT(\"swire\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.swire",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.36,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          1.05,
+          -0.1
+        ],
+        "tail": null
+      },
+      "palette": {
+        "hair": 14989175,
+        "shade": 11301701,
+        "coat": 2566704,
+        "trim": 15635529,
+        "eye": 6532723
+      },
+      "meshCount": 17,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "emperor",
+      "label": "大帝",
+      "build": "XT(\"emperor\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.emperor",
+      "rig": {
+        "bodyY": 0,
+        "headY": 1.23,
+        "headScale": [
+          1,
+          1,
+          1
+        ],
+        "armX": 0.51,
+        "armY": 1.05,
+        "legX": 0.22,
+        "legY": 0.24,
+        "coatTails": null,
+        "tail": [
+          0,
+          0.43,
+          -0.26
+        ]
+      },
+      "palette": {
+        "hair": 1319980,
+        "shade": 1319980,
+        "coat": 15198688,
+        "trim": 16236619,
+        "eye": 1120288
+      },
+      "meshCount": 10,
+      "groups": [
+        "body",
+        "head",
+        "tail",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "lee",
+      "label": "老鲤",
+      "build": "XT(\"lee\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.lee",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.37,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          0.81,
+          0
+        ],
+        "tail": [
+          0,
+          0.73,
+          -0.22
+        ]
+      },
+      "palette": null,
+      "meshCount": 17,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "tail",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "aak",
+      "label": "阿",
+      "build": "XT(\"aak\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.aak",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.355,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          0.81,
+          0
+        ],
+        "tail": [
+          0,
+          0.73,
+          -0.2
+        ]
+      },
+      "palette": null,
+      "meshCount": 13,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "tail",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "hung",
+      "label": "吽",
+      "build": "XT(\"hung\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.hung",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.355,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          0.81,
+          0
+        ],
+        "tail": [
+          0,
+          0.73,
+          -0.2
+        ]
+      },
+      "palette": null,
+      "meshCount": 12,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "tail",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    },
+    {
+      "id": "waaifu",
+      "label": "槐琥",
+      "build": "XT(\"waaifu\")",
+      "faces": "attachFace(...)  // src/characters.face.js",
+      "details": "/data/reference-models.json#models.waaifu",
+      "rig": {
+        "bodyY": -0.1095,
+        "headY": 1.47,
+        "headScale": [
+          1.672,
+          1.54,
+          1.518
+        ],
+        "armX": 0.355,
+        "armY": 1.3,
+        "legX": 0.16,
+        "legY": 0.73,
+        "coatTails": [
+          0,
+          0.81,
+          0
+        ],
+        "tail": [
+          0,
+          0.73,
+          -0.2
+        ]
+      },
+      "palette": null,
+      "meshCount": 13,
+      "groups": [
+        "body",
+        "head",
+        "coatTails",
+        "tail",
+        "armL",
+        "armR",
+        "legL",
+        "legR"
+      ]
+    }
+  ],
+  "high": [
+    {
+      "id": "lappland",
+      "label": "拉普兰德",
+      "variants": [
+        "classic",
+        "desolate"
+      ],
+      "build": "buildHires(\"lappland\", \"classic\")",
+      "baked": true,
+      "files": [
+        "/models/lappland-classic.json",
+        "/models/lappland-desolate.json"
+      ],
+      "sharedBaseline": "/models/_shared-baseline.json"
+    },
+    {
+      "id": "texas",
+      "label": "德克萨斯",
+      "variants": [
+        "classic",
+        "silent"
+      ],
+      "build": "buildHires(\"texas\", \"classic\")",
+      "baked": true,
+      "files": [
+        "/models/texas-classic.json",
+        "/models/texas-silent.json"
+      ],
+      "sharedBaseline": "/models/_shared-baseline.json"
+    },
+    {
+      "id": "exusiai",
+      "label": "能天使",
+      "variants": [
+        "classic",
+        "covenant"
+      ],
+      "build": "buildHires(\"exusiai\", \"classic\")",
+      "baked": true,
+      "files": [
+        "/models/exusiai-classic.json",
+        "/models/exusiai-covenant.json"
+      ],
+      "sharedBaseline": "/models/_shared-baseline.json"
+    }
+  ],
+  "sources": {
+    "lowPoly": "/characters.orig.js",
+    "face": "/characters.face.js",
+    "highPoly": "/characters.hires2.js",
+    "reference": "/data/reference-models.json"
+  },
+  "generatedAt": 1790757417149
+}

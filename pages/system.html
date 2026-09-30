@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>系统状态 · 低模工坊</title>
+<script>/* 主题：在样式生效前先套用一次，避免深→浅闪白 */try{if(localStorage.getItem('lowpoly-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
+<link rel="stylesheet" href="../styles/shell.css" />
+<style>
+  .mdl{ font-size:12px; line-height:1.9; }
+  .mdl .row{ display:flex; align-items:center; gap:8px; padding:5px 0; border-top:1px solid var(--line); }
+  .mdl .row:first-child{ border-top:0; }
+  .mdl .row b{ flex:1; font-weight:600; }
+  .mdl .row .tag{ font-size:10.5px; color:var(--dim); background:var(--raise); border:1px solid var(--line);
+    padding:1px 7px; border-radius:10px; }
+  .mdl .row button{ background:var(--panel2); color:var(--ink); border:1px solid var(--line);
+    border-radius:4px; padding:2px 8px; font-size:11px; cursor:pointer; }
+  .mdl .row button:hover{ border-color:var(--accent); }
+  .mdl .row button.del{ border-color:var(--warn-line); color:var(--warn-ink3); }
+  .scroll{ max-height:220px; overflow:auto; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="pagehead">
+    <h1>系统 <i>状态</i></h1>
+    <p>显卡 / AI Agent 接管 / 临时缓存 / 新增模型。所有「保存 · 缓存 · Agent」都靠本地的
+      <code>tools/_serve.js</code>，页面上看到「连不上本地服务」就是它没跑。</p>
+    <div class="tags"><span>硬件加速检测</span><span>接管租约</span><span>一键清缓存</span><span>模型列表</span></div>
+  </div>
+
+  <div class="sys">
+    <div class="box" id="gpuBox"><h4>显卡 / 渲染后端</h4><div class="v">读取中…</div></div>
+    <div class="box" id="agentBox"><h4>AI Agent 接管</h4><div class="v">读取中…</div></div>
+    <div class="box" id="cacheBox"><h4>临时缓存 TemporaryCache</h4><div class="v">读取中…</div></div>
+    <div class="box" id="modelBox"><h4>新增模型</h4><div class="v">读取中…</div></div>
+  </div>
+
+  <h2 class="sec-h">三个产物目录</h2>
+  <table class="tbl">
+    <tr><th>目录</th><th>装什么</th><th>会不会被清</th></tr>
+    <tr><td><code>NewlyAddedModelList/</code></td><td><b>确认的新增模型</b>（正式产物）</td>
+        <td>不会 —— 只能手动删</td></tr>
+    <tr><td><code>NewlyAddedModelTemporaryList/</code></td><td>待确认的新增模型</td>
+        <td>不会 —— 确认后自动移走</td></tr>
+    <tr><td><code>TemporaryCache/</code></td><td>AI 测试产物、门报告、截图、<code>agent.json</code></td>
+        <td><b>清缓存会清空</b>（保留 README 和 agent.json）</td></tr>
+  </table>
+
+  <h2 class="sec-h">排障</h2>
+  <div class="doclist">
+    <a href="docs.html#gpu">显卡与故障排查<span>没有显卡怎么办 · 软件渲染降级建议 · <code>chrome://gpu</code> 怎么读</span></a>
+    <a href="docs.html#troubleshooting">故障排查<span>按症状查：白屏 / 卡 / 门报错看不懂 / 保存失败 / 看不到新增模型</span></a>
+    <a href="docs.html#storage">存储与目录<span>保存 / 确认 / 缓存的 REST API 和数据格式</span></a>
+    <a href="docs.html#model-files">模型文件取用<span>★ AI 怎么直接拿到模型文件：/bundle、/file/:name、角色索引</span></a>
+  </div>
+
+  <div class="foot">
+    命令行长这样也可以查：<code>curl http://localhost:8765/api/store</code><br>
+    Agent 接管是<b>租约制</b>：超过 <code>ttlMinutes</code>（默认 30）没有 ping 就当作已退出，接管位自动空出来。
+  </div>
+</div>
+
+<script src="../src/shell.js" defer></script>
+<script type="module">
+import { Store, gpuInfo, gpuAdvice } from '../src/characters.store.js';
+const el = id => document.getElementById(id);
+
+/* ---- 显卡 ---- */
+(function gpu(){
+  const g = gpuInfo(), adv = gpuAdvice(g);
+  const box = el('gpuBox');
+  box.classList.toggle('warn', adv.level !== 'ok');
+  box.classList.toggle('ok', adv.level === 'ok');
+  box.innerHTML = '<h4>显卡 / 渲染后端</h4>';
+  let html = `<div class="v"><b>${g.renderer || '未知'}</b><br>`
+    + `${g.webgl || '—'} · ${g.supported ? (g.software ? '软件渲染（CPU 模拟）' : '硬件加速') : '没有 WebGL'}`
+    + (g.maxTexture ? ` · 最大纹理 ${g.maxTexture}` : '') + `</div>`
+    + `<div class="dim" style="margin-top:6px">${adv.title}</div>`;
+  if(adv.level !== 'ok'){
+    html += `<ul class="steps">` + adv.steps.map(s => `<li>${s}</li>`).join('') + `</ul>`
+      + `<div class="dim">完整排查：<a href="docs.html#gpu">docs/gpu.md</a></div>`;
+  }
+  box.insertAdjacentHTML('beforeend', html);
+})();
+
+/* ---- 服务端 ---- */
+function rel(t){ const d = Date.now()-t; return d<60000?'刚刚':d<3600000?Math.round(d/60000)+' 分钟前':Math.round(d/3600000)+' 小时前'; }
+
+async function refresh(){
+  const clear = (id, t) => { const b = el(id); if(b) b.innerHTML = '<h4>'+t+'</h4>'; return b; };
+  try{
+    const s = await Store.overview();
+
+    /* Agent */
+    const a = s.agent || {}, occupying = !!a.occupying;
+    const ab = clear('agentBox','AI Agent 接管');
+    ab.classList.toggle('ok', occupying);
+    ab.classList.toggle('warn', !occupying && !!a.agent && a.stale);
+    if(occupying){
+      ab.insertAdjacentHTML('beforeend', `<div class="v"><span class="agent-tag">${a.agent}</span></div>`
+        + `<div class="dim" style="margin-top:6px">${a.note || '（没有备注）'}</div>`
+        + `<div class="dim">自 ${new Date(a.since).toLocaleString()} · ${rel(a.heartbeat||a.since)}有动作（租约 ${a.ttlMinutes} 分钟）</div>`
+        + `<div class="btns"><button id="btnRelease">交还接管位</button></div>`);
+    }else if(a.agent && a.stale){
+      ab.insertAdjacentHTML('beforeend', `<div class="v"><span class="agent-tag none">${a.agent}（已退出）</span></div>`
+        + `<div class="dim" style="margin-top:6px">${a.note2||''}</div>`);
+    }else{
+      ab.insertAdjacentHTML('beforeend', `<div class="v"><span class="agent-tag none">还没有 Agent 接管</span></div>`
+        + `<div class="dim" style="margin-top:6px">把 <a href="docs.html#ai-workflow">docs/ai-workflow.md</a> 交给一个 Agent，
+           它会用 <code>Store.setAgent('名字','备注')</code> 登记自己；<b>干完要交还</b>
+           （<code>EditorAPI.agentRelease()</code>），否则 30 分钟后按超时自动释放。</div>`);
+    }
+    if(a.releasedAt) ab.insertAdjacentHTML('beforeend',
+      `<div class="dim" style="margin-top:6px">上一次：${a.releasedBy||'（无名）'} 于 ${new Date(a.releasedAt).toLocaleString()} 交还</div>`);
+    const rb = el('btnRelease');
+    if(rb) rb.onclick = async () => {
+      if(!confirm('强制交还接管位？（当前 Agent 会被打断）')) return;
+      await Store.releaseAgent('用户在系统状态页手动交还');
+      location.reload();
+    };
+
+    /* 缓存 */
+    const cf = s.cache.files || [];
+    const cb = clear('cacheBox','临时缓存 TemporaryCache');
+    cb.insertAdjacentHTML('beforeend',
+      `<div class="v">${cf.length} 个文件 · ${(s.cache.bytes/1024).toFixed(1)} KB</div>`
+      + `<div class="dim">AI 测试产物都丢这里，随时可以清，不影响已保存的模型。</div>`
+      + `<div class="btns"><button id="btnClearCache" class="danger">清除缓存</button>`
+      + `<button id="btnRefresh">刷新状态</button></div>`
+      + (cf.length ? `<div class="dim scroll" style="margin-top:8px">`
+          + cf.slice(0,40).map(f=>`· ${f.name} <span style="color:var(--muted3)">${(f.bytes/1024).toFixed(1)}KB · ${rel(f.mtime)}</span>`).join('<br>')
+          + (cf.length>40?`<br>… 还有 ${cf.length-40} 个`:'') + `</div>` : ''));
+    el('btnClearCache').onclick = async () => {
+      if(!confirm('清空 TemporaryCache？（AI 测试产物，不影响已保存模型）')) return;
+      const r = await Store.cacheClear();
+      alert('已清除 ' + r.removed + ' 个文件');
+      location.reload();
+    };
+    el('btnRefresh').onclick = () => location.reload();
+
+    /* 模型 */
+    const mb = clear('modelBox','新增模型');
+    const all = [].concat(s.confirmed||[], s.temporary||[]);
+    mb.insertAdjacentHTML('beforeend',
+      `<div class="v">已确认 <b>${s.confirmed.length}</b> · 待确认 <b>${s.temporary.length}</b></div>`
+      + `<div class="dim"><code>NewlyAddedModelList/</code> 和 <code>NewlyAddedModelTemporaryList/</code>`
+      + `<br>在「<a href="character-lab.html">角色实验室</a> → 新增模型」里查看（独立分区，不与原作角色混合）。</div>`
+      + (all.length ? `<div class="mdl scroll" style="margin-top:10px">` + all.map(m =>
+          `<div class="row"><b>${m.name}</b><span class="tag">${m.where||''}${m.parts?(' · '+m.parts+'部件'):''}${m.triangles?(' · '+m.triangles+'面'):''}</span>`
+          + `<button data-del="${m.id}" class="del">删</button></div>`).join('') + `</div>` : ''));
+    mb.querySelectorAll('button[data-del]').forEach(b => b.onclick = async () => {
+      const id = b.getAttribute('data-del');
+      if(!confirm('删除新增模型 '+id+' ?')) return;
+      await Store.removeModel(id); location.reload();
+    });
+  }catch(e){
+    for(const [id,title] of [['agentBox','AI Agent 接管'],['cacheBox','临时缓存 TemporaryCache'],['modelBox','新增模型']]){
+      const b = clear(id, title);
+      b.classList.add('warn');
+      b.insertAdjacentHTML('beforeend',
+        `<div class="v" style="color:var(--warn-ink3)">连不上本地服务</div>`
+        + `<div class="dim">${e.message||e}</div>`
+        + `<div class="dim" style="margin-top:6px">保存 / 缓存 / Agent 记录都需要 <code>node tools/_serve.js</code> 在跑。`
+        + `双击 <code>启动-低模工坊.bat</code> 即可。</div>`);
+    }
+  }
+}
+refresh();
+</script>
+</body>
+</html>

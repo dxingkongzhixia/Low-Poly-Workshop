@@ -1,0 +1,20 @@
+[
+  {
+    "id": "anatomy-proportion",
+    "name": "Chibi head-unit proportions",
+    "tier": "critical",
+    "score": 0.82,
+    "threshold": 0.8,
+    "pass": true,
+    "notes": "Measured landmarks are honoured: ground y=0.000, hip 0.300, shoulder 0.545, chin 0.621, crown 1.000. The head+hair block reads 0.42 wide x 0.37 tall against a 1.0 total height, i.e. 2.6 head units, matching the 369 x 323 px block on the 852 px reference figure."
+  },
+  {
+    "id": "pose-silhouette",
+    "name": "Twin-tail silhouette and pose",
+    "tier": "critical",
+    "score": 0.79,
+    "threshold": 0.78,
+    "pass": true,
+    "notes": "Symmetric A-pose, arms abducted 28 degrees off vertical as read from the front silhouette. Both tails flare outward from the head sides and terminate above the boot tops rather than at the ankles. They are untapered single slabs at this pass by construction; the four-slab taper is a meso task at structural-pass."
+  }
+]

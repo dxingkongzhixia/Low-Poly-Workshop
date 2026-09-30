@@ -1,0 +1,11 @@
+[
+  {
+    "id": "outfit-and-palette",
+    "name": "Outfit, white accents and palette",
+    "tier": "important",
+    "score": 0.75,
+    "threshold": 0.72,
+    "pass": true,
+    "notes": "Two-value palette matches the reference: near-black garment and hair with a single neutral white accent family. Every white mark is bounded geometry, not a texture - coat panel trim strips, hem trim, the five-point back star, the belt, the boot chevrons and the sleeve bands - so all of them survive a relight. The finish is matte throughout (roughness 0.72-0.85 on the blacks) after the earlier flat-facet specular blowout was traced to an under-rough hair material, not to geometry. The only metal is the belt buckle, the choker ring and the halter ring."
+  }
+]

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3f7fc4"/><stop offset="1" stop-color="#2f6bb0"/>
+    </linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#123055" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="900" height="560" fill="url(#bg)"/>
+
+  <!-- 连线：从中心云到各设备 -->
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.85" stroke-width="2.6" stroke-linecap="round">
+    <path d="M300 280 H180 V150 H120"/>
+    <path d="M300 280 H180 V250 H96"/>
+    <path d="M300 300 H170 V400 H104"/>
+    <path d="M300 330 H196 V470 H120"/>
+    <path d="M360 200 V120 H286"/>
+    <path d="M390 180 V92 H392"/>
+    <path d="M420 200 V120 H512"/>
+    <path d="M600 280 H720 V150 H780"/>
+    <path d="M600 280 H720 V250 H804"/>
+    <path d="M600 300 H730 V400 H796"/>
+    <path d="M600 330 H704 V470 H780"/>
+    <path d="M540 200 V120 H614"/>
+    <path d="M510 180 V92 H508"/>
+  </g>
+
+  <!-- 中心云 -->
+  <g filter="url(#sh)">
+    <path d="M330 330a62 62 0 0 1 4-124 78 78 0 0 1 146-30 70 70 0 0 1 96 34 60 60 0 0 1 14 120z"
+          fill="#ffffff"/>
+  </g>
+  <text x="450" y="300" text-anchor="middle" font-family="Arial,Helvetica,sans-serif"
+        font-size="86" font-weight="700" fill="#20344a" letter-spacing="4">API</text>
+
+  <!-- 设备节点（圆底 + 简单图标） -->
+  <g>
+    <style>
+      .n{fill:#ffffff}
+      .i{fill:none;stroke:#20344a;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+    </style>
+    <!-- 左列 -->
+    <circle class="n" cx="96" cy="150" r="30"/><rect class="i" x="86" y="138" width="20" height="26" rx="3"/><path class="i" d="M91 144h10"/>
+    <circle class="n" cx="72" cy="250" r="30"/><path class="i" d="M62 238l20 24M82 238L62 262"/>
+    <circle class="n" cx="80" cy="400" r="30"/><circle class="i" cx="80" cy="400" r="11"/><circle class="i" cx="80" cy="400" r="3"/>
+    <circle class="n" cx="96" cy="470" r="30"/><rect class="i" x="84" y="458" width="24" height="16" rx="2"/><path class="i" d="M92 480h8"/>
+    <!-- 上排 -->
+    <circle class="n" cx="286" cy="96" r="30"/><circle class="i" cx="286" cy="96" r="10"/><path class="i" d="M282 82h8v-8h-8z"/>
+    <circle class="n" cx="392" cy="66" r="30"/><rect class="i" x="378" y="60" width="28" height="14" rx="3"/><path class="i" d="M382 80h20"/>
+    <circle class="n" cx="512" cy="96" r="30"/><path class="i" d="M500 86h24v20h-24z"/><path class="i" d="M506 92h12"/>
+    <circle class="n" cx="614" cy="96" r="30"/><circle class="i" cx="614" cy="100" r="9"/><path class="i" d="M608 108l-4 8M620 108l4 8"/>
+    <!-- 右列 -->
+    <circle class="n" cx="804" cy="150" r="30"/><rect class="i" x="792" y="140" width="24" height="20" rx="3"/><path class="i" d="M792 166h24"/>
+    <circle class="n" cx="828" cy="250" r="30"/><rect class="i" x="818" y="240" width="20" height="26" rx="3"/><circle class="i" cx="828" cy="260" r="3"/>
+    <circle class="n" cx="820" cy="400" r="30"/><path class="i" d="M806 394h28v16h-28z"/><path class="i" d="M812 416h16"/>
+    <circle class="n" cx="804" cy="470" r="30"/><path class="i" d="M794 458h20v22h-20z"/><path class="i" d="M790 486h28"/>
+    <!-- 中间点缀 -->
+    <circle class="n" cx="196" cy="330" r="26"/><circle class="i" cx="196" cy="330" r="9"/>
+    <circle class="n" cx="704" cy="330" r="26"/><circle class="i" cx="704" cy="330" r="9"/>
+  </g>
+</svg>

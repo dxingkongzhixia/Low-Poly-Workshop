@@ -1,0 +1,111 @@
+{
+  "sourceImage": "D:\\ROTK\\three.js\\img2threejs-work\\reference.png",
+  "zonesDir": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\crops",
+  "detailInventory": {
+    "scanMethod": "component-zones",
+    "targetMinDetails": 10,
+    "details": [
+      {
+        "id": "face",
+        "kind": "",
+        "description": "",
+        "region": {
+          "x": 0.135,
+          "y": 0.09,
+          "width": 0.075,
+          "height": 0.27,
+          "units": "normalized"
+        },
+        "scale": "",
+        "affects": "",
+        "mapsTo": {
+          "type": "",
+          "ref": ""
+        },
+        "evidenceRef": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\crops\\face.png",
+        "confidence": 0.0
+      },
+      {
+        "id": "torso",
+        "kind": "",
+        "description": "",
+        "region": {
+          "x": 0.115,
+          "y": 0.32,
+          "width": 0.115,
+          "height": 0.3,
+          "units": "normalized"
+        },
+        "scale": "",
+        "affects": "",
+        "mapsTo": {
+          "type": "",
+          "ref": ""
+        },
+        "evidenceRef": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\crops\\torso.png",
+        "confidence": 0.0
+      },
+      {
+        "id": "legs",
+        "kind": "",
+        "description": "",
+        "region": {
+          "x": 0.115,
+          "y": 0.6,
+          "width": 0.115,
+          "height": 0.33,
+          "units": "normalized"
+        },
+        "scale": "",
+        "affects": "",
+        "mapsTo": {
+          "type": "",
+          "ref": ""
+        },
+        "evidenceRef": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\crops\\legs.png",
+        "confidence": 0.0
+      },
+      {
+        "id": "hair-l",
+        "kind": "",
+        "description": "",
+        "region": {
+          "x": 0.02,
+          "y": 0.06,
+          "width": 0.14,
+          "height": 0.45,
+          "units": "normalized"
+        },
+        "scale": "",
+        "affects": "",
+        "mapsTo": {
+          "type": "",
+          "ref": ""
+        },
+        "evidenceRef": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\crops\\hair-l.png",
+        "confidence": 0.0
+      },
+      {
+        "id": "hood-back",
+        "kind": "",
+        "description": "",
+        "region": {
+          "x": 0.72,
+          "y": 0.3,
+          "width": 0.12,
+          "height": 0.25,
+          "units": "normalized"
+        },
+        "scale": "",
+        "affects": "",
+        "mapsTo": {
+          "type": "",
+          "ref": ""
+        },
+        "evidenceRef": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\crops\\hood-back.png",
+        "confidence": 0.0
+      }
+    ]
+  },
+  "authoringInstruction": "Open each zone crop under zonesDir and replace every detail stub's kind, description, scale, affects, mapsTo, and confidence with what is actually observed. Add more detail entries per zone if a single zone contains multiple distinct marks; do not leave stubs unfilled or unlinked (mapsTo must reference a real component.localFeatures or material.localOverrides entry)."
+}

@@ -1,0 +1,59 @@
+{
+  "skill": "ThreejS_Standard_modeling",
+  "referenceUrl": "https://www.bilibili.com/toy/ChtnnVPvxjymK5f9/index.html",
+  "resolvedContentUrl": "https://www.bilibilitoy.com/toy/ChtnnVPvxjymK5f9/33827221388288-v19380/index.html",
+  "engine": "Three.js",
+  "captureType": "public production bundle plus embedded Object3D.toJSON models",
+  "capturedAt": "2026-09-28",
+  "notes": [
+    "The bundle is a build artifact; original authoring source, server-side code, and source maps were not exposed.",
+    "Audio and voice files are not bundled into this skill because they are not needed for modeling reference.",
+    "Use extracted material only for research, compatibility testing, and proportion study; obtain permission for redistribution or commercial use."
+  ],
+  "coreRule": "The standard model (reference/iE.json) is the base. Reference images only supply details (clothes, hair, palette, props). Adapt reference images to the standard's look, never rebuild the standard's proportions from an image.",
+  "standardProject": {
+    "path": "viewer/",
+    "purpose": "Canonical standard project: loads the standard model, switches variants, toggles categories, wireframe, live triangle stats."
+  },
+  "standardModel": {
+    "file": "reference/iE.json",
+    "altFile": "reference/aE.json",
+    "format": "Three.js Object3D.toJSON",
+    "orientation": "+Z",
+    "height": 2.298,
+    "headRatio": "~2.4 heads (chibi)",
+    "geometryCount": 45,
+    "materialCount": 40,
+    "textureCount": 3,
+    "studyTriangleTotal": 1787
+  },
+  "landmarks": {
+    "file": "reference/standard-landmarks.json",
+    "regenerateWith": "node tools/measure-standard.js reference/iE.json --json",
+    "keyValues": {
+      "footPlane": 0.0,
+      "kneeY": 0.368,
+      "thighRange": [0.386, 0.643],
+      "torsoRange": [0.656, 1.25],
+      "torsoHalfWidth": 0.247,
+      "armX": 0.292,
+      "armRange": [0.709, 1.102],
+      "headRange": [1.065, 1.814],
+      "headMaxHalfWidth": 0.514,
+      "headMaxHalfWidthYRange": [1.66, 1.78],
+      "hairlineY": 1.319,
+      "faceVisibleRange": [1.09, 1.32]
+    }
+  },
+  "referenceFiles": [
+    "reference/iE.json",
+    "reference/aE.json",
+    "reference/PE.json",
+    "reference/yD.json",
+    "reference/dO.json"
+  ],
+  "variants": {
+    "classic": { "geometryCount": 45, "materialCount": 40, "textureCount": 3, "studyTriangleTotal": 1787 },
+    "desolate": { "geometryCount": 52, "materialCount": 51, "textureCount": 4, "studyTriangleTotal": 1619 }
+  }
+}

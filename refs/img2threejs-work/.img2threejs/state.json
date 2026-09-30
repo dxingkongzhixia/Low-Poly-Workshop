@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 1,
+  "status": "complete",
+  "profile": "character",
+  "currentStep": "complete",
+  "currentPass": "complete",
+  "checklist": [
+    {
+      "id": "image-analysis",
+      "scope": "setup",
+      "status": "done",
+      "evidence": [
+        "analysis/image-analysis.md"
+      ],
+      "reason": "",
+      "command": "Read grimoire/intake/image_analysis.md and analyze {reference}"
+    },
+    {
+      "id": "reference-suitability",
+      "scope": "setup",
+      "status": "done",
+      "evidence": [
+        "analysis/reference-suitability.md"
+      ],
+      "reason": "",
+      "command": "Read grimoire/intake/validation_rubric.md and record a pass, conditional, or reject verdict for {reference}"
+    },
+    {
+      "id": "reference-admission",
+      "scope": "setup",
+      "status": "done",
+      "evidence": [
+        "analysis/reference-admission.json"
+      ],
+      "reason": "",
+      "command": "python3 forge/stage1_intake/check_reference_admission.py {reference} --out admission.json --probe-out probe.json"
+    },
+    {
+      "id": "character-contract-read",
+      "scope": "setup",
+      "status": "done",
+      "evidence": [
+        "review/character-contract-and-action-ready.md"
+      ],
+      "reason": "",
+      "command": "Read grimoire/character/reconstruction.md and grimoire/character/likeness_maximization.md completely"
+    },
+    {
+      "id": "character-landmarks",
+      "scope": "setup",
+      "status": "done",
+      "evidence": [
+        "analysis/anatomy.json"
+      ],
+      "reason": "",
+      "command": "python3 forge/stage1_intake/extract_landmarks.py {reference} --out anatomy.json --overlay landmarks.png"
+    },
+    {
+      "id": "local-spec-search",
+      "scope": "setup",
+      "status": "done",
+      "evidence": [
+        "assessment.json"
+      ],
+      "reason": "",
+      "command": "Run the local evidence search before authoring the assessment"
+    },
+    {
+      "id": "pre-spec-assessment",
+      "scope": "setup",
+      "status": "done",
+      "evidence": [
+        "assessment.json"
+      ],
+      "reason": "",
+      "command": "python3 forge/stage2_spec/new_pre_spec_assessment.py \"<name>\" --image {reference} --domain character --out assessment.json"
+    },
+    {
+      "id": "detail-inventory",
+      "scope": "setup",
+      "status": "done",
+      "evidence": [
+        "analysis/detail-inventory.json"
+      ],
+      "reason": "",
+      "command": "python3 forge/stage1_intake/build_detail_inventory.py {reference} --mode grid-3x3 --out-dir detail-inventory --out di.json"
+    },
+    {
+      "id": "projection-route",
+      "scope": "setup",
+      "status": "skipped",
+      "evidence": [],
+      "reason": "Flat vector-like paint: every identity feature has a hard bounded boundary, which grimoire/review/gates_reference.md requires to be gated on GEOMETRY via vertex regions, never as a texture. There is no photographic albedo to recover, so camera solve + de-light + bake_projected_texture would only blur the boundaries the review depends on. The decision and its reasoning are recorded in assessment.json projectionRoute.",
+      "command": "Record whether projection is required; if required run solve_camera_pose.py, delight_albedo.py, and bake_projected_texture.py, otherwise skip with a reason"
+    },
+    {
+      "id": "spec-authoring",
+      "scope": "setup",
+      "status": "done",
+      "evidence": [
+        "object-sculpt-spec.json"
+      ],
+      "reason": "",
+      "command": "python3 forge/stage2_spec/new_sculpt_spec.py \"<name>\" --image {reference} --assessment assessment.json --augmentation spec-augmentation.json --domain character --out object-sculpt-spec.json"
+    },
+    {
+      "id": "material-evidence",
+      "scope": "setup",
+      "status": "skipped",
+      "evidence": [],
+      "reason": "The subject is flat paint and every material is correctly declared 'textureless' with per-material evidence, so there is no finish for extract_pbr_evidence.py to recover: solid albedo for flat paint is the recipe, and a patterned reference crop is the case this subject does not present. Declining the extraction is recorded in the materials' textureless.evidence entries.",
+      "command": "python3 forge/stage1_intake/material_region_analysis.py --manifest material-regions.json --out-dir material-evidence --out material-analysis.json (single-crop route: analyze_texture.py + extract_pbr_evidence.py per verified crop; otherwise skip with a reason)"
+    },
+    {
+      "id": "material-spec-wiring",
+      "scope": "setup",
+      "status": "done",
+      "evidence": [
+        "object-sculpt-spec.json"
+      ],
+      "reason": "",
+      "command": "python3 forge/stage2_spec/apply_material_analysis.py {spec} material-analysis.json --in-place"
+    },
+    {
+      "id": "strict-validation",
+      "scope": "setup",
+      "status": "done",
+      "evidence": [
+        "review/strict-validation.txt"
+      ],
+      "reason": "",
+      "command": "python3 forge/stage2_spec/validate_sculpt_spec.py {spec} --strict-quality"
+    },
+    {
+      "id": "build-current-pass",
+      "scope": "pass",
+      "status": "pending",
+      "evidence": [],
+      "reason": "",
+      "command": "python3 forge/stage3_build/generate_threejs_factory.py {spec} --out src/createObjectModel.ts --pass-id {pass_id}"
+    },
+    {
+      "id": "render-capture",
+      "scope": "pass",
+      "status": "pending",
+      "evidence": [],
+      "reason": "",
+      "command": "Render {pass_id} and capture the fixed review view plus meaningful orbit views"
+    },
+    {
+      "id": "review-contract-read",
+      "scope": "pass",
+      "status": "pending",
+      "evidence": [],
+      "reason": "",
+      "command": "Read grimoire/review/gates_reference.md and grimoire/review/self_correction.md completely"
+    },
+    {
+      "id": "tier1-diagnostics",
+      "scope": "pass",
+      "status": "pending",
+      "evidence": [],
+      "reason": "",
+      "command": "python3 forge/stage4_review/diagnose_render.py --reference {reference} --render <shot> --spec {spec} --pass-id {pass_id} --in-place"
+    },
+    {
+      "id": "multi-angle-review",
+      "scope": "pass",
+      "status": "pending",
+      "evidence": [],
+      "reason": "",
+      "command": "python3 forge/stage4_review/diagnose_render_multi_angle.py --reference <fixed-shot> --orbit <orbit-shot> --orbit <orbit-shot>"
+    },
+    {
+      "id": "pass-gate-check",
+      "scope": "pass",
+      "status": "pending",
+      "evidence": [],
+      "reason": "",
+      "command": "python3 forge/stage3_build/orchestrate_passes.py check {spec} --pass-id {pass_id}"
+    },
+    {
+      "id": "ai-review-recorded",
+      "scope": "pass",
+      "status": "pending",
+      "evidence": [],
+      "reason": "",
+      "command": "Create the comparison sheet, inspect it with agent vision, and append exactly one review action"
+    },
+    {
+      "id": "pipeline-sync",
+      "scope": "pass",
+      "status": "pending",
+      "evidence": [],
+      "reason": "",
+      "command": "python3 forge/stage3_build/orchestrate_passes.py sync {spec} --in-place"
+    },
+    {
+      "id": "part-coverage",
+      "scope": "final",
+      "status": "done",
+      "evidence": [
+        "review/part-coverage.json"
+      ],
+      "reason": "",
+      "command": "python3 forge/stage4_review/check_part_coverage.py --spec {spec} --manifest parts.json"
+    },
+    {
+      "id": "action-ready",
+      "scope": "final",
+      "status": "done",
+      "evidence": [
+        "review/character-contract-and-action-ready.md"
+      ],
+      "reason": "",
+      "command": "Verify explodable/clickable hierarchy, pivots, sockets, and root.userData.sculptRuntime"
+    },
+    {
+      "id": "emission-target",
+      "scope": "final",
+      "status": "skipped",
+      "evidence": [],
+      "reason": "No emission target was requested. The user asked to see the reconstruction; a terminal GLB or other export is a separate, explicitly-selected whole-artifact transform and was not asked for.",
+      "command": "python3 forge/stage3_build/emit_target.py --spec {spec} --workspace . [--target <kind> [--plugin <id>]]"
+    },
+    {
+      "id": "plugin-gates",
+      "scope": "final",
+      "status": "skipped",
+      "evidence": [],
+      "reason": "No domain plugin serves this item. 'character' is an in-repo base module, not an installed plugin, and the pipeline names no domain: with no plugin the generic path applies and there is no plugin review gate to run. Declining is not a failure.",
+      "command": "python3 forge/stage3_build/run_gates.py --workspace ."
+    }
+  ],
+  "loops": {
+    "perPass": {
+      "lighting-pass": 1
+    },
+    "total": 1,
+    "maxPerPass": 3,
+    "maxTotal": 6
+  },
+  "artifacts": {
+    "reference": "reference.png",
+    "spec": "object-sculpt-spec.json"
+  },
+  "passHistory": [],
+  "reviewCursor": 6,
+  "iterationAction": "initial",
+  "stopReason": ""
+}

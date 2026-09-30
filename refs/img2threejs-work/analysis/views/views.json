@@ -1,0 +1,71 @@
+{
+  "sourceImage": "D:\\ROTK\\three.js\\img2threejs-work\\reference.png",
+  "zonesDir": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\views",
+  "detailInventory": {
+    "scanMethod": "component-zones",
+    "targetMinDetails": 10,
+    "details": [
+      {
+        "id": "front",
+        "kind": "",
+        "description": "",
+        "region": {
+          "x": 0.0,
+          "y": 0.0,
+          "width": 0.33,
+          "height": 1.0,
+          "units": "normalized"
+        },
+        "scale": "",
+        "affects": "",
+        "mapsTo": {
+          "type": "",
+          "ref": ""
+        },
+        "evidenceRef": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\views\\front.png",
+        "confidence": 0.0
+      },
+      {
+        "id": "side",
+        "kind": "",
+        "description": "",
+        "region": {
+          "x": 0.33,
+          "y": 0.0,
+          "width": 0.34,
+          "height": 1.0,
+          "units": "normalized"
+        },
+        "scale": "",
+        "affects": "",
+        "mapsTo": {
+          "type": "",
+          "ref": ""
+        },
+        "evidenceRef": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\views\\side.png",
+        "confidence": 0.0
+      },
+      {
+        "id": "back",
+        "kind": "",
+        "description": "",
+        "region": {
+          "x": 0.67,
+          "y": 0.0,
+          "width": 0.33,
+          "height": 1.0,
+          "units": "normalized"
+        },
+        "scale": "",
+        "affects": "",
+        "mapsTo": {
+          "type": "",
+          "ref": ""
+        },
+        "evidenceRef": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\views\\back.png",
+        "confidence": 0.0
+      }
+    ]
+  },
+  "authoringInstruction": "Open each zone crop under zonesDir and replace every detail stub's kind, description, scale, affects, mapsTo, and confidence with what is actually observed. Add more detail entries per zone if a single zone contains multiple distinct marks; do not leave stubs unfilled or unlinked (mapsTo must reference a real component.localFeatures or material.localOverrides entry)."
+}

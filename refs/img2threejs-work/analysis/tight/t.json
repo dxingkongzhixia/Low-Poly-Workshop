@@ -1,0 +1,31 @@
+{
+  "sourceImage": "D:\\ROTK\\three.js\\img2threejs-work\\reference.png",
+  "zonesDir": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\tight",
+  "detailInventory": {
+    "scanMethod": "component-zones",
+    "targetMinDetails": 10,
+    "details": [
+      {
+        "id": "front-tight",
+        "kind": "",
+        "description": "",
+        "region": {
+          "x": 0.0105,
+          "y": 0.0978,
+          "width": 0.4025,
+          "height": 0.8356,
+          "units": "normalized"
+        },
+        "scale": "",
+        "affects": "",
+        "mapsTo": {
+          "type": "",
+          "ref": ""
+        },
+        "evidenceRef": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\tight\\front-tight.png",
+        "confidence": 0.0
+      }
+    ]
+  },
+  "authoringInstruction": "Open each zone crop under zonesDir and replace every detail stub's kind, description, scale, affects, mapsTo, and confidence with what is actually observed. Add more detail entries per zone if a single zone contains multiple distinct marks; do not leave stubs unfilled or unlinked (mapsTo must reference a real component.localFeatures or material.localOverrides entry)."
+}

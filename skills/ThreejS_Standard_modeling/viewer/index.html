@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ThreejS Standard Modeling · Reference Viewer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <aside class="panel">
+    <h1>标准模型查看器</h1>
+    <p class="muted">Three.js stylized low-poly study reference</p>
+    <div class="buttons">
+      <button id="reset">重置视角</button><button id="wire">线框</button><button id="spin">自动旋转</button>
+    </div>
+    <h2>参考模型</h2>
+    <select id="modelSelect"><option value="iE">Classic / 原始服装</option><option value="aE">Desolate / 变体服装</option></select>
+    <h2>分类显示</h2><div id="filters"></div>
+    <h2>审计</h2><pre id="stats">加载中…</pre>
+    <p class="hint">拖拽旋转 · 滚轮缩放 · 右键平移</p>
+  </aside>
+  <main id="viewport"><div id="loading">正在加载标准模型…</div></main>
+  <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.180.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.180.0/examples/jsm/"}}</script>
+  <script type="module" src="viewer.js"></script>
+</body>
+</html>

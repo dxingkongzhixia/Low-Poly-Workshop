@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>低模工坊 · 企鹅物流</title>
+<script>/* 主题：在样式生效前先套用一次，避免深→浅闪白 */try{if(localStorage.getItem('lowpoly-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
+<link rel="stylesheet" href="../styles/shell.css" />
+<style>
+  body.start{ background:
+    radial-gradient(1200px 520px at 78% -10%, var(--row) 0%, transparent 60%),
+    radial-gradient(900px 480px at 8% 8%, var(--row) 0%, transparent 55%), var(--bg); }
+  .hero .lead{ max-width:700px; }
+  .badge{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:var(--green);
+    border:1px solid var(--ok-bg2); background:var(--ok-bg); padding:4px 10px; border-radius:20px; margin-bottom:14px; }
+  .stat{ display:flex; gap:14px; flex-wrap:wrap; margin-top:18px; }
+  .stat div{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 16px; }
+  .stat b{ display:block; font-size:20px; color:var(--accent); font-variant-numeric:tabular-nums; }
+  .stat span{ font-size:11px; color:var(--dim); }
+</style>
+</head>
+<body class="start">
+
+<div class="wrap">
+  <div class="hero">
+    <div class="lead">
+      <div class="badge">原作模型逐字提取 · 无需联网即可运行</div>
+      <h1>低模<i>工坊</i></h1>
+      <p>
+        从《企鹅物流 · 未登记访客》里逐字提取出低模生成器 <code>XT(id)</code>、脸部贴图管线与烘焙高模，
+        做成一套本地工具：<b>拆分</b>·<b>调色</b>·<b>混搭</b>·<b>导入</b>。
+        所有工具共用同一份模型代码，互不影响。
+      </p>
+      <div class="tags">
+        <span>14 个原作低模</span><span>6 个烘焙高模</span><span>逐图元编辑</span>
+        <span>分区规则 + 刀切平面</span><span>体素/GLB 导入</span><span>AI Agent 可接管</span>
+      </div>
+      <div class="stat">
+        <div><b>14</b><span>低模角色</span></div>
+        <div><b>6</b><span>高模分支</span></div>
+        <div><b>109</b><span>EditorAPI 命令</span></div>
+        <div><b>8</b><span>质量门</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="sec-h">进入分支</h2>
+  <div class="cards">
+
+    <a class="card" href="character-editor.html">
+      <div class="shot"><img src="/images/previews/preview-editor-split.png" alt="部件编辑器" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>·</span>'"></div>
+      <div class="bd">
+        <h3>部件编辑器</h3>
+        <p>把原作低模<b>精确拆成单个图元</b>（保留圆角/斜切/锯齿），逐块移动、旋转、缩放、改色；
+           支持分区规则、刀切平面、体素导入，并暴露 <code>window.EditorAPI</code> 给 AI Agent 驱动。
+           生成流水线、质量门、保存/缓存都在这。</p>
+        <div class="k"><em>拆分版</em><em>分区规则</em><em>刀切平面</em><em>EditorAPI</em><em>质量门</em><em>保存新增模型</em></div>
+        <span class="go">进入 →</span>
+      </div>
+    </a>
+
+    <a class="card" href="character-lab.html">
+      <div class="shot"><img src="/images/previews/preview-hires6.png" alt="角色实验室" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>·</span>'"></div>
+      <div class="bd">
+        <h3>角色实验室</h3>
+        <p>把 14 个原作低模和 6 个烘焙高模放在一起看：低/高模切换、待机/行走动画、调色板与渐变换色、
+           多机位、截图与 GLB 导出。<b>新增模型走独立分区</b>，不会和原作角色混在一起。</p>
+        <div class="k"><em>低模 ⇄ 高模</em><em>新增模型（独立）</em><em>动画</em><em>调色</em><em>导出 GLB</em></div>
+        <span class="go">进入 →</span>
+      </div>
+    </a>
+
+    <a class="card" href="character-mixer.html">
+      <div class="shot"><img src="/images/previews/preview-mixer.png" alt="换装室" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>·</span>'"></div>
+      <div class="bd">
+        <h3>换装室</h3>
+        <p>按<b>槽位</b>把不同角色的部件换到一起：头/头发/左右臂/左右腿/后摆/兽尾/光环/道具，
+           十几个角色任意组合，即时预览、导出。</p>
+        <div class="k"><em>槽位混搭</em><em>跨角色</em><em>低/高模混用</em></div>
+        <span class="go">进入 →</span>
+      </div>
+    </a>
+
+    <a class="card" href="model-import.html">
+      <div class="shot"><img src="/images/previews/preview-brm-q34.png" alt="模型导入" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>·</span>'"></div>
+      <div class="bd">
+        <h3>模型导入</h3>
+        <p>吃别的建模工具产物：<b>.vox</b>（VoxiGen / MagicaVoxel）逐体素解析后贪心合并成方块，
+           <b>.glb / .gltf / .obj</b> 按连通分量拆成轴对齐盒。预览 → 调缩放定位 → 一键送到编辑器继续做。</p>
+        <div class="k"><em>.vox</em><em>.glb</em><em>.gltf</em><em>.obj</em><em>→ 可编辑方块</em></div>
+        <span class="go">进入 →</span>
+      </div>
+    </a>
+
+  </div>
+
+  <h2 class="sec-h" id="ai">AI 工作流</h2>
+  <div class="cards">
+    <a class="card" href="ai-workflow.html">
+      <div class="shot contain"><img src="/images/ai/ai-agent.svg" alt="AI Agent" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>AI</span>'"></div>
+      <div class="bd">
+        <h3>AI 工作流说明 <span class="agent-tag none" id="agentTag">读取中…</span></h3>
+        <p>一个 AI Agent 怎么<b>直接接管</b>这套工具：从参考图到成品的 27 步流水线、8 个质量门、
+        循环上限与硬停规则、给模型的系统提示词。<b>使用者只要和 Agent 说话就能改模型</b>，
+         改动一律落在既有框架内（命名部件 + 四种图元，不另造一套）。</p>
+        <div class="k"><em>pipeline() 先行</em><em>逐遍构建</em><em>没测≠通过</em><em>循环硬停</em></div>
+        <span class="go">查看说明 →</span>
+      </div>
+    </a>
+    <a class="card" href="docs.html#ai-pipeline">
+      <div class="shot contain"><img src="/images/ai/api.svg" alt="API" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>API</span>'"></div>
+      <div class="bd">
+        <h3>AI 操作手册</h3>
+        <p>大模型读的那一份：每个阶段的确切命令、门的阈值、反模式清单、可以整段复制的命令序列。</p>
+        <div class="k"><em>照抄即可</em><em>阈值来源</em><em>失败记录</em></div>
+        <span class="go">查看手册 →</span>
+      </div>
+    </a>
+    <a class="card" href="docs.html#editor-api">
+      <div class="shot contain"><img src="/images/ai/ref.svg" alt="REF" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>REF</span>'"></div>
+      <div class="bd">
+        <h3>EditorAPI 命令速查</h3>
+        <p>109 个命令的人读版清单：规格结构、四种图元、分区规则、参照图、导入、保存、质量门、显卡。</p>
+        <div class="k"><em>命令表</em><em>字段说明</em><em>示例</em></div>
+        <span class="go">查看速查 →</span>
+      </div>
+    </a>
+  </div>
+
+  <h2 class="sec-h" id="sys">系统状态</h2>
+  <div class="sys">
+    <div class="box" id="gpuBox"><h4>显卡 / 渲染后端</h4><div class="v">读取中…</div></div>
+    <div class="box" id="agentBox"><h4>AI Agent 接管</h4><div class="v">读取中…</div></div>
+    <div class="box" id="cacheBox"><h4>临时缓存 TemporaryCache</h4><div class="v">读取中…</div></div>
+    <div class="box" id="modelBox"><h4>新增模型</h4><div class="v">读取中…</div></div>
+  </div>
+
+  <h2 class="sec-h" id="docs">文档</h2>
+  <div class="doclist">
+    <a href="docs.html#README">文档索引<span>先看这个：遇到问题该翻哪一篇</span></a>
+    <a href="docs.html#ai-workflow">AI 工作流<span>接管方式 / 当前 Agent / 接口边界</span></a>
+    <a href="docs.html#ai-pipeline">AI 操作手册<span>27 步流水线 + 8 个质量门 + 反模式</span></a>
+    <a href="docs.html#model-files">模型文件取用<span>★ AI 怎么直接拿到模型文件</span></a>
+    <a href="docs.html#editor-api">EditorAPI 速查<span>116 个命令</span></a>
+    <a href="docs.html#storage">存储与目录<span>三个目录 / 保存 / 缓存 / REST API</span></a>
+    <a href="docs.html#gpu">显卡与故障排查<span>没有显卡怎么办</span></a>
+    <a href="docs.html#troubleshooting">故障排查<span>照症状查</span></a>
+    <a href="docs.html#development">开发文档<span>★ 架构 / 模块 / 不变量 / 怎么扩展</span></a>
+    <a href="/data/reference-models.json">原作测量数据<span>14 个低模的 rig / 调色板 / 包围盒</span></a>
+    <a href="/data/characters.json">原作角色索引<span>低模 14 + 高模变体（JSON）</span></a>
+  </div>
+
+  <div class="foot">
+    <b>启动方式</b>：双击 <code>启动-低模工坊.bat</code>（会起一个本地服务器并打开本页）。
+    也可以手动 <code>node tools/_serve.js</code> 后访问 <code>http://localhost:8765/</code>。<br>
+    必须走本地服务器：所有页面都是 ES module，<code>file://</code> 打不开；保存/缓存/Agent 记录也依赖这个服务器。<br>
+    模型代码：<code>src/characters.orig.js</code>（低模）<code>src/characters.face.js</code>（脸）
+    <code>src/characters.hires2.js</code>（高模）<code>models/*.json</code>（烘焙数据）。<br>
+    让 AI 接管：把 <a href="docs.html#ai-workflow">docs/ai-workflow.md</a> 交给它，或直接在编辑器里让 Agent 调 <code>EditorAPI.pipeline()</code>。
+  </div>
+</div>
+
+<script src="../src/shell.js" defer></script>
+<script type="module">
+import { Store, gpuInfo, gpuAdvice } from '../src/characters.store.js';
+
+const el = id => document.getElementById(id);
+
+/* ---- 显卡 ---- */
+(function gpu(){
+  const g = gpuInfo(), adv = gpuAdvice(g);
+  const box = el('gpuBox');
+  box.classList.toggle('warn', adv.level !== 'ok');
+  box.classList.toggle('ok', adv.level === 'ok');
+  box.innerHTML = '<h4>显卡 / 渲染后端</h4>';
+  let html = `<div class="v"><b>${g.renderer || '未知'}</b><br>`
+    + `${g.webgl || '—'} · ${g.supported ? (g.software ? '软件渲染（CPU 模拟）' : '硬件加速') : '没有 WebGL'}`
+    + (g.maxTexture ? ` · 最大纹理 ${g.maxTexture}` : '') + `</div>`
+    + `<div class="dim" style="margin-top:6px">${adv.title}</div>`;
+  if(adv.level !== 'ok'){
+    html += `<ul class="steps">` + adv.steps.map(s => `<li>${s}</li>`).join('') + `</ul>`
+      + `<div class="dim">完整排查：<a href="docs.html#gpu">docs/gpu.md</a>`
+      + ` · 也可以去 <a href="system.html">系统状态</a>页看</div>`;
+  }
+  box.insertAdjacentHTML('beforeend', html);
+})();
+
+/* ---- Agent / 缓存 / 模型 ---- */
+function rel(t){ const d = Date.now()-t; return d<60000?'刚刚':d<3600000?Math.round(d/60000)+' 分钟前':Math.round(d/3600000)+' 小时前'; }
+
+async function refreshServer(){
+  const clear = (id, title) => { const b = el(id); if(b) b.innerHTML = '<h4>' + title + '</h4>'; return b; };
+  try{
+    const s = await Store.overview();
+
+    const a = s.agent || {};
+    const ab = clear('agentBox', 'AI Agent 接管');
+    const occupying = !!a.occupying;
+    ab.classList.toggle('ok', occupying);
+    ab.classList.toggle('warn', !occupying && !!a.agent && a.stale);
+    if(occupying){
+      ab.insertAdjacentHTML('beforeend', `<div class="v"><span class="agent-tag">${a.agent}</span></div>`
+        + `<div class="dim" style="margin-top:6px">${a.note || '（没有备注）'}</div>`
+        + `<div class="dim">自 ${new Date(a.since).toLocaleString()} · ${rel(a.heartbeat||a.since)}有动作`
+        + `（租约 ${a.ttlMinutes} 分钟）</div>`
+        + `<div class="btns"><button id="btnRelease">交还接管位</button></div>`);
+    }else if(a.agent && a.stale){
+      ab.insertAdjacentHTML('beforeend', `<div class="v"><span class="agent-tag none">${a.agent}（已退出）</span></div>`
+        + `<div class="dim" style="margin-top:6px">${a.note2 || ''}</div>`);
+    }else{
+      ab.insertAdjacentHTML('beforeend', `<div class="v"><span class="agent-tag none">还没有 Agent 接管</span></div>`
+        + `<div class="dim" style="margin-top:6px">把 <a href="docs.html#ai-workflow">docs/ai-workflow.md</a> 交给一个 Agent，`
+        + `它会用 <code>Store.setAgent('名字','备注')</code> 登记自己；<b>干完要交还</b>`
+        + `（<code>EditorAPI.agentRelease()</code>），否则 30 分钟后按超时自动释放。</div>`);
+    }
+    if(a.releasedAt) ab.insertAdjacentHTML('beforeend',
+      `<div class="dim" style="margin-top:6px">上一次：${a.releasedBy || '（无名）'} 于 ${new Date(a.releasedAt).toLocaleString()} 交还</div>`);
+    const rb = document.getElementById('btnRelease');
+    if(rb) rb.onclick = async () => {
+      if(!confirm('强制交还接管位？（当前 Agent 会被打断）')) return;
+      await Store.releaseAgent('用户在启动页手动交还');
+      location.reload();
+    };
+    const tag = el('agentTag');
+    if(tag){
+      tag.textContent = occupying ? ('当前接管：' + a.agent) : (a.agent && a.stale ? '接管位空闲（上一个已超时退出）' : '当前没有 Agent 接管');
+      tag.classList.toggle('none', !occupying);
+    }
+
+    const cb = el('cacheBox'); cb.innerHTML = '<h4>临时缓存 TemporaryCache</h4>';
+    const cacheFiles = s.cache.files || [];
+    cb.insertAdjacentHTML('beforeend',
+      `<div class="v">${cacheFiles.length} 个文件 · ${(s.cache.bytes/1024).toFixed(1)} KB</div>`
+      + `<div class="dim">AI 测试产物都丢这里，随时可以清，不影响已保存的模型。</div>`
+      + `<div class="btns"><button id="btnClearCache">清除缓存</button>`
+      + `<button id="btnRefresh">刷新状态</button></div>`
+      + (cacheFiles.length ? `<div class="dim scroll" style="margin-top:8px;max-height:140px;overflow:auto">`
+          + cacheFiles.slice(0,20).map(f=>`· ${f.name} <span style="color:var(--muted3)">${(f.bytes/1024).toFixed(1)}KB</span>`).join('<br>')
+          + (cacheFiles.length>20?`<br>… 还有 ${cacheFiles.length-20} 个`:'') + `</div>` : ''));
+    document.getElementById('btnClearCache').onclick = async () => {
+      if(!confirm('清空 TemporaryCache？（AI 测试产物，不影响已保存模型）')) return;
+      const r = await Store.cacheClear();
+      alert('已清除 ' + r.removed + ' 个文件');
+      location.reload();
+    };
+    document.getElementById('btnRefresh').onclick = () => location.reload();
+
+    const mb = el('modelBox'); mb.innerHTML = '<h4>新增模型</h4>';
+    mb.insertAdjacentHTML('beforeend',
+      `<div class="v">已确认 <b>${s.confirmed.length}</b> · 待确认 <b>${s.temporary.length}</b></div>`
+      + `<div class="dim"><code>NewlyAddedModelList/</code> 和 <code>NewlyAddedModelTemporaryList/</code>`
+      + `<br>在「角色实验室 → 新增模型」里查看（独立分区，不与原作角色混合）。</div>`
+      + (s.confirmed.concat(s.temporary).length
+          ? `<div class="dim" style="margin-top:8px">` + s.confirmed.concat(s.temporary)
+              .slice(0,10).map(m=>`· ${m.name} <span style="color:var(--muted3)">${m.where||''}${m.parts?(' '+m.parts+'部件'):''}</span>`).join('<br>') + `</div>`
+          : ''));
+  }catch(e){
+    for(const [id,title] of [['agentBox','AI Agent 接管'],['cacheBox','临时缓存 TemporaryCache'],['modelBox','新增模型']]){
+      const b = clear(id, title);
+      b.classList.add('warn');
+      b.insertAdjacentHTML('beforeend',
+        `<div class="v" style="color:var(--warn-ink3)">连不上本地服务</div>`
+        + `<div class="dim">${e.message||e}</div>`
+        + `<div class="dim" style="margin-top:6px">保存 / 缓存 / Agent 记录都需要 <code>node tools/_serve.js</code> 在跑。`
+        + `双击 <code>启动-低模工坊.bat</code> 即可。</div>`);
+    }
+    const tag = el('agentTag'); if(tag){ tag.textContent = '服务未启动'; tag.classList.add('none'); }
+  }
+}
+refreshServer();
+</script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>模型导入 · 低模工坊</title>
+<script>/* 主题：在样式生效前先套用一次，避免深→浅闪白 */try{if(localStorage.getItem('lowpoly-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
+<link rel="stylesheet" href="../styles/shell.css" />
+<link rel="stylesheet" href="../styles/model-import.css" />
+</head>
+<body>
+
+<div id="hud">
+  <b>模型导入</b><span id="hudSub">选择一个 .vox / .glb / .gltf / .obj</span>
+  <div id="stats">—</div>
+</div>
+
+<div id="stage"></div>
+<div id="axis">左键旋转 · 滚轮缩放 · 右键平移</div>
+<div id="toast"></div>
+
+<div id="panel">
+  <header>
+    <h1>模型导入</h1>
+    <p>吃别的建模工具的产物：<b>.vox</b>（VoxiGen / MagicaVoxel）逐体素解析后三轴贪心合并成方块；
+       <b>.glb/.gltf/.obj</b> 按连通分量拆成轴对齐盒。<br>
+       调好参数后导出 GLB，或下载「部件 JSON」在部件编辑器里整块导入。</p>
+  </header>
+  <div id="scroll">
+
+    <div class="sec"><h2>1 · 载入文件 <span id="fname">—</span></h2>
+      <div class="body">
+        <div class="btns">
+          <button class="btn primary" id="pick">选择文件…</button>
+          <button class="btn" id="demo">载入示例</button>
+        </div>
+        <input type="file" id="file" accept=".vox,.glb,.gltf,.obj" style="display:none">
+        <div id="drop">把 .vox / .glb / .gltf / .obj 拖到这里</div>
+        <div class="row"><label>轴朝向</label>
+          <select id="up"><option value="z">源为 Z-up（MagicaVoxel / VoxiGen，自动转 Y-up）</option>
+            <option value="y">源为 Y-up</option></select></div>
+        <div class="row"><label>平滑网格体素化</label>
+          <span><input type="checkbox" id="voxelize"> 精度 <input type="number" id="res" value="48" min="8" max="160" step="2" style="width:58px"></span></div>
+        <div class="row"><label>判实心（内部填充）</label>
+          <span><input type="checkbox" id="fill" checked> <span class="note" style="display:inline">单一闭合网格开，多网格关</span></span></div>
+        <p class="note">Meshy / TRELLIS 这类<b>平滑网格</b>要勾上「体素化」：先采样成体素再贪心合并。
+           <b>判实心</b>只在模型是一整片闭合网格时才对；如果导入的是游戏模型那种一堆分离盒子壳，关掉它，
+           否则盒子和盒子之间的空隙会被灌实糊成一坨。</p>
+      </div>
+    </div>
+
+    <div class="sec"><h2>2 · 缩放定位</h2>
+      <div class="body">
+        <div class="row"><label>缩放到高度</label><input type="range" id="fit" min="0.1" max="3" step="0.02" value="1.2"><span class="val" id="fitV">1.20</span></div>
+        <div class="row"><label>微调缩放</label><input type="range" id="scl" min="0.2" max="3" step="0.02" value="1"><span class="val" id="sclV">1.00</span></div>
+        <div class="btns">
+          <button class="btn" id="fitOn">按高度归一</button>
+          <button class="btn" id="reset">重置</button>
+        </div>
+        <div class="row"><label>统一颜色</label>
+          <span><input type="checkbox" id="useColor"> <input type="color" id="color" value="#24252b"></span></div>
+      </div>
+    </div>
+
+    <div class="sec"><h2>3 · 导出</h2>
+      <div class="body">
+        <div class="btns">
+          <button class="btn primary" id="dlGlb">导出 GLB</button>
+          <button class="btn" id="dlPart">下载部件 JSON</button>
+        </div>
+        <div class="btns">
+          <button class="btn" id="copyApi">复制 importVox 调用</button>
+          <button class="btn" id="copyPart">复制部件 JSON</button>
+        </div>
+        <p class="note">在部件编辑器里：把文件放同目录 → <code>EditorAPI.importVox('/x.vox',{parent:'head',fitHeight:0.62})</code>；
+           或面板「导入体素 / 模型」。部件 JSON 可用 <code>EditorAPI.addPartJSON({...})</code> 整块加入。</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { readBoxes, normalizeBoxes } from '../src/vox-import.js';
+
+/* ---------------- 场景 ---------------- */
+const host = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ antialias:true, preserveDrawingBuffer:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+host.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xa9b4ba);
+scene.fog = new THREE.Fog(0xa9b4ba, 16, 44);
+const camera = new THREE.PerspectiveCamera(34, innerWidth/innerHeight, .05, 200);
+camera.position.set(1.6, 1.7, 3.4);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, .7, 0); controls.enableDamping = true; controls.dampingFactor = .08;
+controls.minDistance = .4; controls.maxDistance = 24; controls.update();
+
+scene.add(new THREE.HemisphereLight(0xcfe3ee, 0x22303a, .95));
+const key = new THREE.DirectionalLight(0xffffff, 2.0);
+key.position.set(3.6, 6.4, 4.8); key.castShadow = true;
+key.shadow.mapSize.set(2048,2048);
+key.shadow.camera.near=.5; key.shadow.camera.far=26;
+key.shadow.camera.left=-4; key.shadow.camera.right=4; key.shadow.camera.top=5; key.shadow.camera.bottom=-1;
+key.shadow.bias=-0.0008; scene.add(key);
+const fill = new THREE.DirectionalLight(0x8fb6d0, .5); fill.position.set(-4,3,-4.5); scene.add(fill);
+(function ground(){
+  const g = new THREE.Mesh(new THREE.PlaneGeometry(80,80),
+    new THREE.MeshStandardMaterial({ color:0x8d979c, roughness:.95, metalness:.02 }));
+  g.rotation.x = -Math.PI/2; g.receiveShadow = true; scene.add(g);
+})();
+
+/* ---------------- 盒 → 合并几何（带顶点色） ---------------- */
+function boxesToMesh(nb, useColor){
+  const P=[], N=[], C=[];
+  const tmp = new THREE.BoxGeometry(1,1,1).toNonIndexed();
+  const tp = tmp.getAttribute('position').array, tn = tmp.getAttribute('normal').array;
+  const col = new THREE.Color();
+  for(const b of nb){
+    col.set(useColor || (b.color!=null ? b.color : 0xcccccc));
+    if(typeof col.set === 'function' && typeof (useColor||b.color) === 'string') {}
+    for(let i=0;i<tp.length;i+=3){
+      P.push(tp[i]*b.w, tp[i+1]*b.h, tp[i+2]*b.d);
+      N.push(tn[i], tn[i+1], tn[i+2]);
+      C.push(col.r, col.g, col.b);
+    }
+  }
+  tmp.dispose();
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P,3));
+  g.setAttribute('normal',   new THREE.Float32BufferAttribute(N,3));
+  g.setAttribute('color',    new THREE.Float32BufferAttribute(C,3));
+  // 位置整体平移：每个 box 的中心
+  const pos = g.getAttribute('position');
+  let k = 0;
+  for(const b of nb){
+    for(let i=0;i<36;i++){
+      pos.setXYZ(k, pos.getX(k)+b.x, pos.getY(k)+b.y, pos.getZ(k)+b.z); k++;
+    }
+  }
+  pos.needsUpdate = true;
+  g.computeBoundingBox(); g.computeBoundingSphere();
+  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
+    vertexColors:true, roughness:.72, metalness:.05 }));
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+
+/* ---------------- 状态 ---------------- */
+const S = { raw:null, kind:'', name:'', src:null, part:null, mesh:null, stats:{} };
+const $ = id => document.getElementById(id);
+let toastT = null;
+function toast(m){ const e=$('toast'); e.textContent=m; e.classList.add('on');
+  clearTimeout(toastT); toastT=setTimeout(()=>e.classList.remove('on'), 1800); }
+
+function clearPreview(){ if(S.mesh){ scene.remove(S.mesh); S.mesh.geometry.dispose(); S.mesh.material.dispose(); S.mesh=null; } }
+
+function rebuild(){
+  if(!S.raw) return;
+  clearPreview();
+  const norm = normalizeBoxes(S.raw, {
+    up: $('up').value,
+    fitHeight: +$('fit').value * +$('scl').value
+  });
+  S.part = norm;
+  const useColor = $('useColor').checked ? $('color').value : null;
+  S.mesh = boxesToMesh(norm.boxes, useColor);
+  scene.add(S.mesh);
+  $('stats').innerHTML =
+    '块 <b>' + norm.boxes.length + '</b>' +
+    (S.stats.voxels ? ' · 体素 ' + S.stats.voxels + ' → 合并 ' + norm.boxes.length : '') +
+    '<br>原始尺寸 ' + norm.bounds.join(' × ') +
+    ' · 缩放 ' + norm.scale +
+    '<br>归一后高度 ' + (+$('fit').value * +$('scl').value).toFixed(2);
+}
+
+/* ---------------- 载入 ---------------- */
+async function load(src, name){
+  try{
+    toast('解析中…');
+    const r = await readBoxes(src, null, { voxelize: $('voxelize').checked, res: +$('res').value, fill: $('fill').checked });
+    S.raw = r.boxes; S.kind = r.kind; S.stats = r.stats; S.name = name || 'model';
+    $('fname').textContent = S.name;
+    // 默认按高度归一：让模型大约 1.2 高
+    rebuild();
+    controls.target.set(0, (+$('fit').value * +$('scl').value)/2, 0); controls.update();
+    toast('载入成功 · ' + r.boxes.length + ' 块' + (r.stats.voxels ? '（体素 ' + r.stats.voxels + '）' : ''));
+  }catch(e){ toast('失败：' + e.message); }
+}
+
+$('pick').onclick = () => $('file').click();
+$('file').onchange = () => {
+  const f = $('file').files && $('file').files[0]; if(!f) return;
+  load(URL.createObjectURL(f), f.name);
+};
+(function dropzone(){
+  const d = $('drop');
+  d.ondragover = e => { e.preventDefault(); d.classList.add('hot'); };
+  d.ondragleave = () => d.classList.remove('hot');
+  d.ondrop = e => { e.preventDefault(); d.classList.remove('hot');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0]; if(f) load(URL.createObjectURL(f), f.name); };
+  addEventListener('paste', e => {
+    const it = [...((e.clipboardData && e.clipboardData.items) || [])].find(x => x.type && x.type.indexOf('image') === 0);
+    if(it) toast('这是图片，不是模型文件');
+  });
+})();
+
+/* 示例：生成一条小体素链（无需外部文件） */
+$('demo').onclick = () => {
+  const W=8,H=5,D=16, cells=new Map();
+  for(let z=0;z<D;z++){
+    const t=z/(D-1), cx=Math.round(1+t*5), r=z<4?2:(z<10?1:0);
+    for(let dx=-r;dx<=r;dx++) for(let dy=-r;dy<=r;dy++){
+      const x=cx+dx, y=2+dy;
+      if(x>=0&&x<W&&y>=0&&y<H) cells.set((y*4096+z)*4096+x, 1+((Math.floor(z/3)+x)%3));
+    }
+  }
+  const pal=['#23242a','#3a3c44','#e8eaee'];
+  const k=[...cells.keys()];
+  S.raw = (function greedy(){
+    const get=(x,y,z)=>cells.get((y*4096+z)*4096+x)||0;
+    const used=new Uint8Array(W*H*D); const out=[];
+    for(let y=0;y<H;y++)for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+      const i=(y*D+z)*W+x; if(used[i]) continue; const c=get(x,y,z); if(!c) continue;
+      let x2=x; while(x2+1<W&&!used[(y*D+z)*W+x2+1]&&get(x2+1,y,z)===c) x2++;
+      let z2=z; zLoop: while(z2+1<D){ for(let xx=x;xx<=x2;xx++){ const j=(y*D+z2+1)*W+xx;
+        if(used[j]||get(xx,y,z2+1)!==c) break zLoop; } z2++; }
+      let y2=y; yLoop: while(y2+1<H){ for(let zz=z;zz<=z2;zz++)for(let xx=x;xx<=x2;xx++){
+        const j=((y2+1)*D+zz)*W+xx; if(used[j]||get(xx,y2+1,zz)!==c) break yLoop; } y2++; }
+      for(let yy=y;yy<=y2;yy++)for(let zz=z;zz<=z2;zz++)for(let xx=x;xx<=x2;xx++) used[(yy*D+zz)*W+xx]=1;
+      out.push({x0:x,x1:x2+1,y0:y,y1:y2+1,z0:z,z1:z2+1,c,hex:pal[(c-1)%pal.length]});
+    }
+    return out;
+  })();
+  S.kind='vox'; S.name='(示例)'; S.stats={ voxels:[...cells.values()].length };
+  $('fname').textContent = '(内置示例)';
+  rebuild(); controls.target.set(0,(+$('fit').value*+$('scl').value)/2,0); controls.update();
+  toast('已生成本地示例：' + S.raw.length + ' 块');
+};
+
+/* ---------------- 参数联动 ---------------- */
+['fit','scl'].forEach(id => $(id).oninput = () => { $(id+'V').textContent = (+$(id).value).toFixed(2); rebuild(); });
+$('up').onchange = rebuild;
+$('useColor').onchange = $('color').oninput = rebuild;
+$('fitOn').onclick = () => { $('fit').value='1.2'; $('scl').value='1'; $('fitV').textContent='1.20'; $('sclV').textContent='1.00'; rebuild(); };
+$('reset').onclick = () => { if(S.raw) rebuild(); };
+
+/* ---------------- 导出 ---------------- */
+function partJSON(){
+  if(!S.part) return null;
+  const useColor = $('useColor').checked;
+  const prims = S.part.boxes.map(b => ({ kind:'box', x:b.x, y:b.y, z:b.z, w:b.w, h:b.h, d:b.d,
+    color: useColor ? $('color').value : b.color, rotX:0, rotY:0, rotZ:0 }));
+  return { id:'imp_'+Math.random().toString(36).slice(2,6), name:'导入·'+(S.name||'模型'),
+    category:'额外装饰', parent:'head', metalness:0.05, mirror:false, primitives:prims };
+}
+function download(blob, name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }
+
+$('dlPart').onclick = $('copyPart').onclick = () => {
+  const p = partJSON(); if(!p){ toast('还没有载入模型'); return; }
+  const s = JSON.stringify(p);
+  if(/copy/.test(''+event.target.id) || event.target.id==='copyPart'){
+    navigator.clipboard && navigator.clipboard.writeText(s).then(()=>toast('部件 JSON 已复制（'+p.primitives.length+' 块）'), ()=>toast('复制失败'));
+  } else {
+    download(new Blob([s], {type:'application/json'}), (S.name||'model').replace(/\.[^.]+$/,'')+'.part.json');
+    toast('已下载部件 JSON');
+  }
+};
+$('copyApi').onclick = () => {
+  if(!S.raw){ toast('还没有载入模型'); return; }
+  const t = "await EditorAPI.importVox('./" + (S.name||'model.vox') + "', { parent:'head', fitHeight:" +
+    (+$('fit').value * +$('scl').value).toFixed(2) + ", up:'" + $('up').value + "' });";
+  navigator.clipboard && navigator.clipboard.writeText(t).then(()=>toast('已复制 API 调用'), ()=>toast('复制失败'));
+};
+$('dlGlb').onclick = () => {
+  if(!S.mesh){ toast('还没有载入模型'); return; }
+  new GLTFExporter().parse(S.mesh, r => {
+    download(new Blob([r], {type:'model/gltf-binary'}), (S.name||'model').replace(/\.[^.]+$/,'')+'.glb');
+    toast('已导出 GLB');
+  }, e => toast('导出失败：'+e.message), { binary:true });
+};
+
+/* ---------------- 循环 ---------------- */
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+
+/* ---------------- 给脚本/大模型用的接口 ---------------- */
+window.ImportAPI = {
+  version:'1.0',
+  state(){ return { kind:S.kind, name:S.name, stats:S.stats,
+    rawBoxes:S.raw?S.raw.length:0, outBoxes:S.part?S.part.boxes.length:0,
+    bounds:S.part?S.part.bounds:null, scale:S.part?S.part.scale:null }; },
+  load(src, name){ return load(src, name); },
+  readBoxes, normalizeBoxes,
+  camera(p, t){ if(p) camera.position.set(p[0],p[1],p[2]); if(t) controls.target.set(t[0],t[1],t[2]); controls.update(); },
+  set(opts){ if(opts.up!=null) $('up').value=opts.up;
+    if(opts.fitHeight!=null) $('fit').value=opts.fitHeight;
+    if(opts.color){ $('useColor').checked=true; $('color').value=opts.color; }
+    rebuild(); },
+  part(){ return partJSON(); },
+  mesh(){ return S.mesh; },
+  scene(){ return scene; },
+  render(){ renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); }
+};
+</script>
+<script src="../src/shell.js" defer></script>
+</body>
+</html>

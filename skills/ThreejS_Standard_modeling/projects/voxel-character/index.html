@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Q版方块角色 · Voxel Viewer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <aside>
+    <h1>Q版方块角色</h1>
+    <p class="sub">MagicaVoxel <code>.vox</code> 模型 · Three.js 体素预览</p>
+
+    <label>变体
+      <select id="variant">
+        <option value="classic">Classic 原版</option>
+        <option value="alternate">Alternate 变体</option>
+      </select>
+    </label>
+
+    <h2>显示</h2>
+    <div class="actions">
+      <button id="spin">自动旋转</button>
+      <button id="grid">地面网格</button>
+      <button id="reset">重置视角</button>
+    </div>
+
+    <h2>实时统计</h2>
+    <pre id="stats">加载中…</pre>
+
+    <p class="tip">左键旋转 · 滚轮缩放 · 右键平移</p>
+  </aside>
+  <main><div id="loading">正在生成体素网格…</div></main>
+
+  <script type="importmap">
+  {"imports":{"three":"https://unpkg.com/three@0.180.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.180.0/examples/jsm/"}}
+  </script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

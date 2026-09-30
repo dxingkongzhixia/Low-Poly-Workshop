@@ -1,0 +1,31 @@
+{
+  "sourceImage": "D:\\ROTK\\three.js\\img2threejs-work\\reference.png",
+  "zonesDir": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\crops2",
+  "detailInventory": {
+    "scanMethod": "component-zones",
+    "targetMinDetails": 10,
+    "details": [
+      {
+        "id": "headA",
+        "kind": "",
+        "description": "",
+        "region": {
+          "x": 0.09,
+          "y": 0.09,
+          "width": 0.25,
+          "height": 0.38,
+          "units": "normalized"
+        },
+        "scale": "",
+        "affects": "",
+        "mapsTo": {
+          "type": "",
+          "ref": ""
+        },
+        "evidenceRef": "D:\\ROTK\\three.js\\img2threejs-work\\analysis\\crops2\\headA.png",
+        "confidence": 0.0
+      }
+    ]
+  },
+  "authoringInstruction": "Open each zone crop under zonesDir and replace every detail stub's kind, description, scale, affects, mapsTo, and confidence with what is actually observed. Add more detail entries per zone if a single zone contains multiple distinct marks; do not leave stubs unfilled or unlinked (mapsTo must reference a real component.localFeatures or material.localOverrides entry)."
+}

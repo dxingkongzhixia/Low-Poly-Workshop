@@ -1,0 +1,14 @@
+{
+  "admitted": true,
+  "reasons": [],
+  "provenance": {
+    "viewpoint": "multiview-sheet",
+    "sourcePath": "D:\\ROTK\\three.js\\img2threejs-work\\reference.png",
+    "width": 2000,
+    "height": 1125,
+    "foregroundCoverage": 0.3998,
+    "largestComponentFraction": 1.0,
+    "pHash": 18410991960829512321,
+    "duplicateOfHash": null
+  }
+}

@@ -1,0 +1,419 @@
+{
+  "parts": [
+    {
+      "id": "root",
+      "name": "root",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "pelvis",
+      "name": "pelvis",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "abdomen",
+      "name": "abdomen",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "chest",
+      "name": "chest",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "neck",
+      "name": "neck",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "head",
+      "name": "head",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "hair-shell",
+      "name": "hair-shell",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "coat",
+      "name": "coat",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-l",
+      "name": "tail-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-r",
+      "name": "tail-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "eye-white-l",
+      "name": "eye-white-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "eye-ring-l",
+      "name": "eye-ring-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "eye-white-r",
+      "name": "eye-white-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "eye-ring-r",
+      "name": "eye-ring-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "mouth",
+      "name": "mouth",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "fringe",
+      "name": "fringe",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "hair-crown-block",
+      "name": "hair-crown-block",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "hair-nape",
+      "name": "hair-nape",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "side-lock-l",
+      "name": "side-lock-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "ear-cup-l",
+      "name": "ear-cup-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-slab-1-l",
+      "name": "tail-slab-1-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-slab-2-l",
+      "name": "tail-slab-2-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-slab-3-l",
+      "name": "tail-slab-3-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-slab-4-l",
+      "name": "tail-slab-4-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-spike-l",
+      "name": "tail-spike-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "side-lock-r",
+      "name": "side-lock-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "ear-cup-r",
+      "name": "ear-cup-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-slab-1-r",
+      "name": "tail-slab-1-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-slab-2-r",
+      "name": "tail-slab-2-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-slab-3-r",
+      "name": "tail-slab-3-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-slab-4-r",
+      "name": "tail-slab-4-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "tail-spike-r",
+      "name": "tail-spike-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "coat-front-l",
+      "name": "coat-front-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "coat-hem-l",
+      "name": "coat-hem-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "coat-trim-front-l",
+      "name": "coat-trim-front-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "sleeve-band-l",
+      "name": "sleeve-band-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "coat-front-r",
+      "name": "coat-front-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "coat-hem-r",
+      "name": "coat-hem-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "coat-trim-front-r",
+      "name": "coat-trim-front-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "sleeve-band-r",
+      "name": "sleeve-band-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "coat-back",
+      "name": "coat-back",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "coat-collar",
+      "name": "coat-collar",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "hood",
+      "name": "hood",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "back-star",
+      "name": "back-star",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "halter-top",
+      "name": "halter-top",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "halter-strap-l",
+      "name": "halter-strap-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "halter-strap-r",
+      "name": "halter-strap-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "choker",
+      "name": "choker",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "belt",
+      "name": "belt",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "buckle",
+      "name": "buckle",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "coat-trim-hem",
+      "name": "coat-trim-hem",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "choker-ring",
+      "name": "choker-ring",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "halter-ring",
+      "name": "halter-ring",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "upper-arm-l",
+      "name": "upper-arm-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "forearm-l",
+      "name": "forearm-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "hand-l",
+      "name": "hand-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "thigh-l",
+      "name": "thigh-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "boot-shaft-l",
+      "name": "boot-shaft-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "boot-chevron-l",
+      "name": "boot-chevron-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "boot-foot-l",
+      "name": "boot-foot-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "boot-sole-l",
+      "name": "boot-sole-l",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "upper-arm-r",
+      "name": "upper-arm-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "forearm-r",
+      "name": "forearm-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "hand-r",
+      "name": "hand-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "thigh-r",
+      "name": "thigh-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "boot-shaft-r",
+      "name": "boot-shaft-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "boot-chevron-r",
+      "name": "boot-chevron-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "boot-foot-r",
+      "name": "boot-foot-r",
+      "kind": "mesh",
+      "hasMesh": true
+    },
+    {
+      "id": "boot-sole-r",
+      "name": "boot-sole-r",
+      "kind": "mesh",
+      "hasMesh": true
+    }
+  ],
+  "count": 69
+}

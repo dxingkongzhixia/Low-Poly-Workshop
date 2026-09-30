@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AI 工作流 · 低模工坊</title>
+<script>/* 主题：在样式生效前先套用一次，避免深→浅闪白 */try{if(localStorage.getItem('lowpoly-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
+<link rel="stylesheet" href="../styles/shell.css" />
+<style>
+  .who{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:16px 0 0; }
+  .who .card-lite{ background:var(--panel); border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; font-size:12.5px; line-height:1.7; }
+  .who .card-lite.ok{ border-color:var(--ok-bg2); }
+  .who .card-lite.warn{ border-color:var(--warn-line); }
+  .flow{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:14px; }
+  .flow em{ font-style:normal; font-size:11.5px; color:var(--accent); background:var(--raise);
+    border:1px solid var(--line); padding:5px 10px; border-radius:6px; }
+  .flow i{ font-style:normal; color:var(--dim); }
+  .rules{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; margin-top:16px; }
+  .rules .r{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:13px 16px; }
+  .rules .r h4{ margin:0 0 8px; font-size:12.5px; color:var(--accent); }
+  .rules .r ul{ margin:0; padding-left:18px; font-size:12px; line-height:1.85; color:var(--dim); }
+  .rules .r ul b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="pagehead">
+    <h1>AI <i>工作流</i> <span class="agent-tag none" id="agentTag">读取中…</span></h1>
+    <p>
+      一个 AI Agent 怎么<b>直接接管</b>这套工具：从参考图到成品的 27 步流水线、8 个质量门、
+      循环上限与硬停规则、给模型的系统提示词。<b>使用者只要和 Agent 说话就能改模型</b>，
+      改动一律落在既有框架内（命名部件 + 四种图元，不另造一套）。
+    </p>
+    <div class="tags">
+      <span>pipeline() 先行</span><span>逐遍构建</span><span>没测 ≠ 通过</span>
+      <span>循环硬停</span><span>退出必须交还</span><span>接口有红线</span>
+    </div>
+  </div>
+
+  <h2 class="sec-h">谁能接管 / 现在谁在接管</h2>
+  <div class="who" id="whoBox"><div class="card-lite">读取中…</div></div>
+
+  <h2 class="sec-h">三种接管方式</h2>
+  <table class="tbl">
+    <tr><th>方式</th><th>适用</th><th>怎么开始</th></tr>
+    <tr>
+      <td><b>A. 只读建议</b></td>
+      <td>只想让它帮你算坐标 / 判断比例对不对</td>
+      <td>把 <a href="docs.html#ai-pipeline">AI 操作手册</a> 和 <a href="docs.html#editor-api">命令速查</a> 给它，
+          它读 <code>state()</code> / <code>tree()</code> 的输出然后给你操作步骤，你自己点</td>
+    </tr>
+    <tr>
+      <td><b>B. Agent 驱动</b><br><span class="agent-tag">推荐</span></td>
+      <td>Agent 能执行 JS（有浏览器控制权 / DevTools / 能跑代码）</td>
+      <td>它调 <code>EditorAPI.setAgent(名字,备注)</code> 登记接管，然后照
+          <code>pipeline()</code> 的 nextCommand 逐遍干活</td>
+    </tr>
+    <tr>
+      <td><b>C. 脚本化批处理</b></td>
+      <td>Agent 不在浏览器里，或一次性的批量改动</td>
+      <td>它生成一段 JS 你粘进 DevTools Console，或写成
+          <code>TemporaryCache/*.js</code> 让页面动态 import</td>
+    </tr>
+  </table>
+
+  <h2 class="sec-h">主循环（27 步）</h2>
+  <div class="flow">
+    <em>准备 5 步</em><i>→</i>
+    <em>blockout</em><i>→</i><em>structure</em><i>→</i><em>hair</em><i>→</i><em>detail</em><i>→</i><em>color</em>
+    <i>→</i><em>收尾 2 步</em>
+  </div>
+  <p style="color:var(--dim);font-size:12.5px;line-height:1.8;margin:12px 0 0">
+    每一遍都是固定的 4 步：<b>实现 → 渲染 → 跑门 → 评审</b>。
+    评审只有 5 个合法动作：
+    <code>continue</code> / <code>refine-spec</code> / <code>refine-code</code> / <code>request-input</code> / <code>stop</code>。
+    同一遍最多修正 3 次、总计 6 次，到顶就 <b>硬停</b>（<code>status:'stopped'</code> + <code>nextCommand:null</code>）。
+  </p>
+<pre class="cmd">EditorAPI.pipeline()                     <b>// ① 每个回合的第一件事</b>
+// ② 执行 p.nextCommand
+EditorAPI.pipelineMark(p.currentStep, { status:'done', evidence:'…' })
+// ③ 每遍结束：渲染 → 跑门 → 写评审
+EditorAPI.render({ pass:true, baseline:true })
+await EditorAPI.gates({ turntable:true, penetration:true })
+EditorAPI.record('continue', { evidence:'对比图 + gate 报告', score:0.86 })</pre>
+
+  <h2 class="sec-h">三条铁律 + 接口红线</h2>
+  <div class="rules">
+    <div class="r">
+      <h4>铁律</h4>
+      <ul>
+        <li><b>首问 pipeline()</b>：对话历史可以丢，它的返回才是权威</li>
+        <li><b>禁止一次性生成</b>：必须逐遍，每遍渲染 + 跑门 + 写评审</li>
+        <li><b>没测 ≠ 通过</b>：任何门报 <code>unevaluated</code> 都不算通过</li>
+        <li><b>硬停即停</b>：<code>status:'stopped'</code> 就向用户报告，别继续</li>
+        <li><b>退出必须交还</b>：<code>agentRelease()</code>（跑完/硬停会自动交还）</li>
+      </ul>
+    </div>
+    <div class="r">
+      <h4>能做 / 不能做</h4>
+      <ul>
+        <li>✅ <code>EditorAPI.*</code> 全部命令、<code>Store.*</code> 模型/缓存/Agent</li>
+        <li>✅ <code>batch([…])</code> 批量、读 <code>data/reference-models.json</code> 做比例参照</li>
+        <li>✅ 直接用编辑器导出的 <code>model.js</code> 工厂</li>
+        <li>❌ 改 <code>src/characters.orig.js</code> / <code>face.js</code> / <code>hires2.js</code></li>
+        <li>❌ 绕过 <code>pipeline()</code> 自己记进度</li>
+        <li>❌ 把正式模型存进 <code>TemporaryCache/</code></li>
+        <li>❌ 手工拼一套新的 spec 格式</li>
+      </ul>
+    </div>
+    <div class="r">
+      <h4>用户怎么说话（示例）</h4>
+      <ul>
+        <li>「按参照图做个通用体型」→ 它走完 27 步，存进 NewlyAddedModelList</li>
+        <li>「马尾改长点，别沉进头里」→ 改图元 + 跑 clearance/scalp 门</li>
+        <li>「看看做到哪了」→ <code>pipeline()</code> 汇报当前遍/进度/循环/下一句命令</li>
+        <li>「它说硬停了」→ 读 <code>stopReason</code> 告诉你需要决策什么</li>
+        <li>「换你自己来做这一遍」→ <code>setAgent()</code> 登记后接着干</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="sec-h">详细文档</h2>
+  <div class="doclist">
+    <a href="docs.html#ai-workflow">AI 工作流说明<b>（完整版）</b>
+      <span>接管方式 / 接口边界 / 会话登记与交还 / 用户对话示例 / 8 个门速查</span></a>
+    <a href="docs.html#ai-pipeline">AI 操作手册
+      <span>27 步流水线 + 8 个质量门与阈值 + 反模式表 + 可整段复制的命令序列</span></a>
+    <a href="docs.html#model-files">模型文件取用<b>（★ Agent 必读）</b>
+      <span>三种模型（原作低模 / 原作高模 / 新增模型）各自的拿法 · <code>/api/models/:id/bundle</code> ·
+        <code>/file/:name</code> · 没保存的状态 · 拿不到的东西</span></a>
+    <a href="docs.html#editor-api">EditorAPI 命令速查
+      <span>116 个命令的人读版清单</span></a>
+  </div>
+
+  <div class="foot">
+    让 AI 接管的最短路径：把本页和 <a href="docs.html#ai-workflow">docs/ai-workflow.md</a> 交给它，
+    然后在<b>部件编辑器</b>里让它调 <code>EditorAPI.pipeline()</code>。
+    它登记之后，<a href="system.html">系统状态</a>页会显示当前是谁在接管。
+  </div>
+</div>
+
+<script src="../src/shell.js" defer></script>
+<script type="module">
+import { Store } from '../src/characters.store.js';
+const el = id => document.getElementById(id);
+
+function rel(t){ const d = Date.now()-t; return d < 60000 ? '刚刚' : d < 3600000 ? Math.round(d/60000)+' 分钟前' : Math.round(d/3600000)+' 小时前'; }
+
+async function refresh(){
+  const tag = el('agentTag'), box = el('whoBox');
+  try{
+    const a = await Store.getAgent();
+    const occupying = !!a.occupying;
+    tag.textContent = occupying ? ('当前接管：'+a.agent)
+      : (a.agent && a.stale ? '接管位空闲（上一个已超时退出）' : '当前没有 Agent 接管');
+    tag.classList.toggle('none', !occupying);
+    box.innerHTML = '';
+    if(occupying){
+      box.innerHTML = `<div class="card-lite ok">
+        <span class="agent-tag">${a.agent}</span><br>
+        ${a.note ? a.note + '<br>' : ''}
+        <span style="color:var(--dim)">自 ${new Date(a.since).toLocaleString()} · ${rel(a.heartbeat||a.since)}有动作
+        · 租约 ${a.ttlMinutes} 分钟</span>
+      </div>`;
+    }else if(a.agent && a.stale){
+      box.innerHTML = `<div class="card-lite warn">
+        <span class="agent-tag none">${a.agent}（已退出）</span><br>
+        <span style="color:var(--warn-ink3)">${a.ageMinutes} 分钟没有动作，超过租约 ${a.ttlMinutes} 分钟 → 已按「退出」处理。</span>
+      </div>`;
+    }else{
+      box.innerHTML = `<div class="card-lite">
+        还没有 Agent 接管。把 <a href="docs.html#ai-workflow">docs/ai-workflow.md</a> 交给一个 Agent，
+        它会用 <code>Store.setAgent('名字','备注')</code> 登记自己；
+        <b>干完要交还</b>（<code>EditorAPI.agentRelease()</code>），否则 30 分钟后按超时自动释放。
+      </div>`;
+    }
+    if(a.releasedAt){
+      box.insertAdjacentHTML('beforeend', `<div class="card-lite">
+        上一次：<b>${a.releasedBy||'（无名）'}</b> 于 ${new Date(a.releasedAt).toLocaleString()} 交还
+      </div>`);
+    }
+  }catch(e){
+    tag.textContent = '服务未启动'; tag.classList.add('none');
+    box.innerHTML = `<div class="card-lite warn">
+      连不上本地服务（<code>tools/_serve.js</code> 没跑）。双击 <code>启动-低模工坊.bat</code> 即可。
+      <br><span style="color:var(--dim)">${e.message||e}</span>
+    </div>`;
+  }
+}
+refresh();
+setInterval(refresh, 20000);
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# ---- 运行时状态：每次 Agent 接管 / 续约都会变，提交它只会制造噪音 ----
+TemporaryCache/agent.json
+
+# ---- 系统垃圾 ----
+Thumbs.db
+desktop.ini
+.DS_Store
+*.log
+*.tmp
+~$*
+
+# ---- 依赖 / 构建产物（本项目零依赖零构建，留个位防以后误提交）----
+node_modules/
+dist/
+# ---- 参照图 / 门报告 / 截图 / 试跑产物：都是「随时可清」的，不进版本库 ----
+TemporaryCache/*
+!TemporaryCache/README.md

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "pose-silhouette",
+    "name": "Twin-tail silhouette and pose",
+    "tier": "critical",
+    "score": 0.80,
+    "threshold": 0.78,
+    "pass": true,
+    "notes": "Each tail now reads as a chain of four stacked angular slabs on an outward-then-down arc: the second slab reaches the widest lateral extent and the fourth is narrowest, so the chain tapers distally and terminates above the boot top. The arms keep the measured 28-degree abduction and the stance is symmetric."
+  },
+  {
+    "id": "hair-facet-structure",
+    "name": "Blocky hair shell and ear cups",
+    "tier": "critical",
+    "score": 0.80,
+    "threshold": 0.78,
+    "pass": true,
+    "notes": "The crown reads as a raised central block flanked by lower slabs, the fringe stops at the measured hairline and no longer covers the eyes, the side locks narrow the visible face to the measured 216 px equivalent, and the lateral ear-cup plates project to the measured 0.216 lateral extent. The two crest spikes rise above the crown as angular blades, not cones. Nothing was smoothed: every hair surface is a flat facet."
+  }
+]

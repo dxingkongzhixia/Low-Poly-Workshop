@@ -1,0 +1,11 @@
+[
+  {
+    "id": "face-landmark-placement",
+    "name": "Blank ringed eyes and face landmarks",
+    "tier": "critical",
+    "score": 0.82,
+    "threshold": 0.8,
+    "pass": true,
+    "notes": "Two large blank white discs sit inside thick black limbal rings, with no iris and no pupil - matching the reference's most distinctive facial feature. Disc diameter 0.073 units against a measured 62 px on an 852 px figure (0.0728). Centres at +/-0.0827 from the midline against a measured 141 px separation (0.1655 total). Eyes sit on the computed ellipsoid surface (z 0.125 at that height) rather than floating in front of it, and the ring torus is the frontmost of the two. The mouth is a 0.045-wide dark line at the measured 0.929 of the head box."
+  }
+]

@@ -1,0 +1,273 @@
+{
+  "targetName": "Chibi Twin-Tail Character",
+  "sourceImage": "reference.png",
+  "preSpecAssessment": {
+    "objectClass": {
+      "primaryType": "stylized chibi character turnaround (figurine)",
+      "primaryDomain": "character",
+      "formLanguage": ["character-like", "hard-surface", "organic"],
+      "structureKind": ["articulated assembly", "layered shell", "repeated modules"],
+      "motionPotential": ["articulated"],
+      "materialFamilies": ["cloth", "skin-like", "plastic"],
+      "notes": "primaryDomain=character. Secondary read hybrid: the hair is authored as a hard-surface, cuboid faceted shell (Minecraft-like blocks plus lateral ear-cup slabs) sitting on a soft organic chibi skull. The body is a normal chibi humanoid in a standing A-pose; the hair shell must NOT be smoothed into organic locks. Identity is carried by the hair silhouette, the blank ringed eyes and the black/white two-value outfit.",
+      "confidence": 0.96
+    },
+    "complexity": {
+      "tier": "complex",
+      "scores": {
+        "silhouetteComplexity": 3,
+        "componentCount": 3,
+        "hierarchyDepth": 3,
+        "repetitionDensity": 2,
+        "materialLayerCount": 2,
+        "localDetailDensity": 2,
+        "occlusionRisk": 2,
+        "actionReadinessNeed": 2
+      },
+      "estimatedCounts": {
+        "macroComponents": 7,
+        "mesoComponents": 22,
+        "microFeatureGroups": 9,
+        "materialLayers": 7,
+        "repetitionSystems": 3
+      },
+      "reasoning": [
+        "silhouetteComplexity=3: the twin-tails plus the blocky hair shell interrupt the outline at every height; the widest point (795px at y=346) is hair, not body.",
+        "componentCount=3: seven macro parts, each with meso sub-parts, plus two mirrored limbs and two mirrored tails.",
+        "hierarchyDepth=3: root -> assembly -> sub-part -> feature group is required (e.g. torso -> coat -> coat panel -> white edge trim).",
+        "repetitionDensity=2: three genuine repetition systems (four tail slabs per side, the coat trim linework chain, the boot chevrons), not thousands of micro marks.",
+        "materialLayerCount=2: only seven materials, but several are split into bounded sub-regions (black cloth plus white trim on the same panel).",
+        "localDetailDensity=2: bounded hard-edged detail (star, chevrons, buckle, choker ring, eye ring) rather than surface microtexture.",
+        "occlusionRisk=2: hood volume, coat interior and the fringe underside are not observable from the sheet.",
+        "actionReadinessNeed=2: a rig-ready humanoid needs a joint chain and pivots, but no destruction or effects."
+      ]
+    },
+    "specDepthDecision": {
+      "requiredDepth": "complex",
+      "minimumComponentLevels": ["macro", "meso", "micro"],
+      "needsRepetitionSystems": true,
+      "needsMaterialLocalOverrides": true,
+      "needsMultipleReviewViews": true,
+      "needsActionReadyHierarchy": true,
+      "rationale": "Every macro part of this subject has visible meso sub-parts (the coat alone has panels, hood, trim and star), and three feature families repeat (tail slabs, trim chain, boot chevrons). A root-only or macro-only spec would describe a different, generic chibi."
+    },
+    "unknownsToResolveBeforeImplementation": [
+      "Twin-tail cross-section profile: front view is thin in screen-x, side and back views are thin in screen-y, so it is read as a flattened rectilinear ribbon (thickness ~0.35 of width). Inferred, confidence 0.55.",
+      "Hood volume and fold structure behind the shoulders: only its outer boundary is visible in the side view. Inferred, confidence 0.5.",
+      "Coat panel thickness and the inner face of the coat: never visible. Inferred at 0.02 world units so no part is paper-thin.",
+      "Glove finger separation: hidden by the long sleeves in all three views. Rendered as a mitt with a thumb only."
+    ],
+    "detailInventory": {
+      "scanMethod": "grid-3x3 + component-zones",
+      "targetMinDetails": 12,
+      "note": "Each detail maps to a component.localFeatures entry or a material.localOverrides entry.",
+      "details": [
+        {"id": "d01", "kind": "bounded-region", "description": "Thick black limbal ring around each eye, ~8px at reference scale, fully enclosing a blank white sclera", "scale": "eye-scale", "affects": "material", "mapsTo": {"type": "material.localOverrides", "ref": "eyeWhite.limbalRing"}, "evidenceRef": "analysis/zones/zone-r0c1.png", "confidence": 0.95},
+        {"id": "d02", "kind": "bounded-region", "description": "White star applique centred on the back of the coat/hood, five equal points, flat and hard-edged", "scale": "back-torso", "affects": "both", "mapsTo": {"type": "component.localFeatures", "ref": "coat.backStar"}, "evidenceRef": "analysis/zones/zone-r0c2.png", "confidence": 0.9},
+        {"id": "d03", "kind": "trim-chain", "description": "White edge linework runs the full perimeter of every coat panel: collar down the front opening, along the hem, and up the back vent", "scale": "full-torso", "affects": "geometry", "mapsTo": {"type": "component.localFeatures", "ref": "coat.trimChain"}, "evidenceRef": "analysis/zones/zone-r1c1.png", "confidence": 0.9},
+        {"id": "d04", "kind": "profile-break", "description": "Hair shell is a set of flat cuboid slabs with hard facet-to-facet value steps; crown consists of a raised central block flanked by two lower slabs", "scale": "head", "affects": "geometry", "mapsTo": {"type": "component.localFeatures", "ref": "hairShell.crownBlocks"}, "evidenceRef": "analysis/crops2/headA.png", "confidence": 0.9},
+        {"id": "d05", "kind": "appendage", "description": "Lateral ear-cup slabs: a flat rectangular plate projecting laterally from each side of the head over the ear position", "scale": "head", "affects": "geometry", "mapsTo": {"type": "component.localFeatures", "ref": "hairShell.earCups"}, "evidenceRef": "analysis/crops2/headA.png", "confidence": 0.85},
+        {"id": "d06", "kind": "hardware", "description": "Square white-edged belt buckle, centred on the white belt at the waist", "scale": "waist", "affects": "both", "mapsTo": {"type": "component.localFeatures", "ref": "pelvis.buckle"}, "evidenceRef": "analysis/zones/zone-r1c1.png", "confidence": 0.85},
+        {"id": "d07", "kind": "hardware", "description": "Choker with a small metal ring pendant at the throat, sitting above the halter neck strap", "scale": "neck", "affects": "both", "mapsTo": {"type": "component.localFeatures", "ref": "torso.chokerRing"}, "evidenceRef": "analysis/zones/zone-r0c1.png", "confidence": 0.8},
+        {"id": "d08", "kind": "bounded-region", "description": "White chevron trim wrapping the boot at ankle height, two nested V strokes on the outer face", "scale": "lower-leg", "affects": "geometry", "mapsTo": {"type": "component.localFeatures", "ref": "leg.bootChevron"}, "evidenceRef": "analysis/zones/zone-r2c1.png", "confidence": 0.85},
+        {"id": "d09", "kind": "profile-break", "description": "Wedge sole: the boot sole is a light-grey wedge, thicker at the toe, and is the only bright element below the knee", "scale": "foot", "affects": "geometry", "mapsTo": {"type": "component.localFeatures", "ref": "leg.bootSole"}, "evidenceRef": "analysis/views/side.png", "confidence": 0.8},
+        {"id": "d10", "kind": "bounded-region", "description": "Exposed midriff band with a navel, bounded above by the halter top and below by the shorts - a hard top and bottom boundary, not a gradient", "scale": "abdomen", "affects": "material", "mapsTo": {"type": "component.localFeatures", "ref": "torso.midriff"}, "evidenceRef": "analysis/zones/zone-r1c1.png", "confidence": 0.9},
+        {"id": "d11", "kind": "repetition", "description": "Each twin-tail is four stacked angular slabs, tapering in width, with a notched spiky fan at the distal end", "scale": "arm-length", "affects": "geometry", "mapsTo": {"type": "component.localFeatures", "ref": "tail.slabChain"}, "evidenceRef": "analysis/views/front.png", "confidence": 0.8},
+        {"id": "d12", "kind": "asymmetry", "description": "A fringe lock partially occludes the character's left eye (screen right); visible eye width 52px against 69px on the other side", "scale": "face", "affects": "geometry", "mapsTo": {"type": "component.localFeatures", "ref": "hairShell.fringeLocks"}, "evidenceRef": "analysis/crops2/headA.png", "confidence": 0.85},
+        {"id": "d13", "kind": "trim-chain", "description": "White wristband trim where the sleeve meets each glove, and a white upper-arm band on each sleeve", "scale": "arm", "affects": "both", "mapsTo": {"type": "component.localFeatures", "ref": "arm.trimBands"}, "evidenceRef": "analysis/zones/zone-r1c0.png", "confidence": 0.8},
+        {"id": "d14", "kind": "bounded-region", "description": "Collar sits as a raised band around the throat with a small zipper pull at its centre front", "scale": "neck", "affects": "geometry", "mapsTo": {"type": "component.localFeatures", "ref": "coat.collar"}, "evidenceRef": "analysis/zones/zone-r0c1.png", "confidence": 0.75}
+      ]
+    },
+    "anatomy": {
+      "applies": true,
+      "styleHeads": 2.6,
+      "proportions": {
+        "headUnit": 0.379,
+        "torso": 1.8,
+        "legs": 0.84,
+        "shoulderWidth": 0.75,
+        "hipWidth": 0.62
+      },
+      "pose": {
+        "type": "standing A-pose, symmetric, arms abducted ~28 degrees, legs straight and slightly apart",
+        "jointAngles": {
+          "neck": [0, 0, 0],
+          "leftShoulder": [0, 0, -28],
+          "rightShoulder": [0, 0, 28],
+          "leftElbow": [0, 0, -5],
+          "rightElbow": [0, 0, 5],
+          "leftWrist": [0, 0, -3],
+          "rightWrist": [0, 0, 3],
+          "leftHip": [0, 0, -4],
+          "rightHip": [0, 0, 4],
+          "leftKnee": [0, 0, 0],
+          "rightKnee": [0, 0, 0],
+          "leftAnkle": [0, 0, 0],
+          "rightAnkle": [0, 0, 0]
+        }
+      },
+      "faceLandmarks": {
+        "eyeLine": 0.78,
+        "eyeSpacing": 0.22,
+        "noseBase": 0.876,
+        "mouthLine": 0.929,
+        "hairline": 0.597
+      },
+      "features": [
+        "chibi head-to-body ratio 2.6 HU (crown 165, chin 488, ground 1017)",
+        "blank white ringed eyes centred at (356,417) and (497,417), 62px diameter, 81px inner-corner gap",
+        "blocky faceted hair shell spanning x[240..609] y[165..488]"
+      ],
+      "confidence": 0.88,
+      "evidenceRef": "analysis/anatomy.json",
+      "measurementNotes": "Face landmarks are normalised to the head+hair bounding box, so eyeLine reads low (0.78) because the hair mass occupies the upper 60% of that box. This is the measured value. screen-x and screen-y here are reference-sheet axes; the model must use 3D object space with forward=+Z, up=+Y and the character's own left=+X."
+    },
+    "sourceImage": "reference.png",
+    "pipelineRouting": {
+      "version": 1,
+      "track": "character-v1.5",
+      "source": "explicit",
+      "status": "resolved",
+      "classification": {
+        "kind": "character",
+        "confidence": 1.0,
+        "evidenceRefs": ["pipeline-routing:explicit:character-v1.5"],
+        "provider": "pipeline-routing-cli",
+        "version": "1"
+      },
+      "conflicts": []
+    }
+  },
+  "qualityContract": {
+    "qualityBar": "complex",
+    "definitionOfDone": [
+      "The render reads as THIS chibi at a glance: ~2.6 HU head-dominated silhouette, two long segmented twin-tails that terminate above the boot tops, and a hard-edged blocky hair shell that is never smoothed into organic locks.",
+      "The face carries the two identity-defining eyes: large blank white discs inside a thick black limbal ring, with no iris and no pupil, plus the asymmetric fringe lock that overlaps the character's left eye.",
+      "Every white accent on the black garment is a bounded GEOMETRY region (vertex-painted region / separate shell), never a painted texture: the coat trim chain, the back star, the belt, the boot chevrons and the sleeve bands.",
+      "The exposed skin regions are the correct three bands: the midriff between halter top and shorts, and the bare thigh band between shorts and boot tops.",
+      "The model is an action-ready hierarchy: named pivot joints (root, neck, head, shoulders, elbows, wrists, hips, knees, ankles, tail roots), every mesh bound to its parent rather than floating."
+    ],
+    "minimumSpecDepth": {
+      "macroComponents": 7,
+      "mesoComponents": 22,
+      "microFeatureGroups": 9,
+      "materialLayers": 7,
+      "repetitionSystems": 3,
+      "reviewViewpoints": 4
+    },
+    "featureGroups": [
+      {
+        "id": "chibi-proportion-lock",
+        "name": "Chibi proportion and stance",
+        "required": true,
+        "qualityCriteria": [
+          "Head unit (cranium+hair block) is 2.6 heads of total height; head width 369px at reference scale is wider than the shoulder width 242px.",
+          "Legs measure 0.84 HU hip-to-ground; shoulders 0.75 HU; hips 0.62 HU.",
+          "Arms are abducted ~28 degrees and the stance is symmetric, matching the front view silhouette."
+        ],
+        "evidenceRefs": ["analysis/anatomy.json#proportions", "analysis/views/front.png"],
+        "failureModes": ["adult 7-8 head proportions", "shoulders wider than the head", "long legs"]
+      },
+      {
+        "id": "blocky-hair-shell",
+        "name": "Faceted blocky hair shell",
+        "required": true,
+        "qualityCriteria": [
+          "Hair is built from flat cuboid slabs with visible facet-to-facet value steps, a raised central crown block flanked by lower slabs, and a flat lateral ear-cup plate on each side.",
+          "No smoothing modifier, no organic lock geometry, no strand cards: the reference is deliberately hard-surface.",
+          "Roots bind to the scalp surface, and the shell reads as one connected mass rather than floating boxes."
+        ],
+        "evidenceRefs": ["analysis/crops2/headA.png"],
+        "failureModes": ["organic rounded hair", "strand cards", "hair slabs floating off the skull"]
+      },
+      {
+        "id": "long-segmented-twin-tails",
+        "name": "Long segmented twin-tails",
+        "required": true,
+        "qualityCriteria": [
+          "Each tail is a chain of four stacked angular slabs whose widths taper distally, ending in a notched spiky fan.",
+          "Tail length reaches to y~810 at reference scale, i.e. below the hip and above the boot top - not to the ankles.",
+          "Roots sit at azimuth +/-90 degrees on the head at ear-cup height; the two tails are exact mirror images ((-x,y,z) reflection, not a rotation)."
+        ],
+        "evidenceRefs": ["analysis/views/front.png", "analysis/views/side.png"],
+        "failureModes": ["straight cones instead of segmented slabs", "tails reaching the ground", "tails rotated instead of mirrored"]
+      },
+      {
+        "id": "blank-ringed-eyes",
+        "name": "Blank ringed eyes",
+        "required": true,
+        "qualityCriteria": [
+          "Each eye is a bright white disc of 62px reference diameter inside a thick black ring, with no iris and no pupil.",
+          "Eye centres are at 141px separation and 81px inner-corner gap, vertically at 0.78 of the head box.",
+          "The character's left eye is partially covered by a fringe lock so its visible width is smaller than the other."
+        ],
+        "evidenceRefs": ["analysis/crops2/headA.png", "analysis/measure7.py output"],
+        "failureModes": ["adding an iris or pupil", "thin or missing limbal ring", "perfectly symmetric eyes"]
+      },
+      {
+        "id": "two-value-outfit-with-white-trim",
+        "name": "Black outfit with white bounded trim",
+        "required": true,
+        "qualityCriteria": [
+          "Coat trim runs continuously along the collar, the two front panel openings and the hem; the back carries a hard-edged five-point white star.",
+          "Belt with a square buckle at the waist, white chevrons at each boot ankle, white wrist and upper-arm bands.",
+          "Each white mark is a bounded region with a clean boundary on the black cloth - no gradient, no noise, no painted texture map."
+        ],
+        "evidenceRefs": ["analysis/zones/zone-r1c1.png", "analysis/views/back.png"],
+        "failureModes": ["trim as a fuzzy texture", "missing back star", "trim lines crossing each other wrongly"]
+      },
+      {
+        "id": "material-response",
+        "name": "Reference material response",
+        "required": true,
+        "qualityCriteria": [
+          "Skin: warm pale albedo, roughness ~0.55, no transmission.",
+          "Hair and black cloth: matte-to-satin, roughness ~0.42-0.50, broad low-frequency sheen only - no strand specular, no gloss.",
+          "White trim is matte (~0.45 roughness), not glowing; the only metal is the belt buckle and choker ring (metalness ~0.75).",
+          "Every white accent is verified on GEOMETRY, not on a texture, so it survives a relight."
+        ],
+        "evidenceRefs": ["analysis/image-analysis.md#layer-5"],
+        "failureModes": ["glossy plastic read", "emissive white trim", "flat shaded single-tone model"]
+      }
+    ],
+    "visualDeltaChecks": [
+      "silhouette delta at head, shoulder, hip and boot-top heights",
+      "twin-tail length and slab-count delta",
+      "eye size, separation and ring thickness delta",
+      "white-trim coverage and boundary delta",
+      "skin-band extent delta (midriff, thighs)"
+    ],
+    "antiShallowSpecRules": [
+      "Do not proceed to code if the spec collapses the seven macro parts into a root-only tree.",
+      "Do not represent any white accent only in prose or only as a texture.",
+      "Do not smooth the hair shell to make it look 'better' - the blockiness is the identity feature.",
+      "Do not proceed past structural-pass if attached child parts lack parentSocket, localStart/localEnd, embedDepth and gapTolerance."
+    ]
+  },
+  "authoringInstruction": "Filled from direct observation of analysis/views/{front,side,back}.png with pixel measurements in analysis/anatomy.json. The subject is a stylized flat-paint chibi: solid albedo plus bounded geometry regions, not reference photo projection.",
+  "projectionRoute": {
+    "route": "geometry-only (no photo projection)",
+    "reason": "The reference is flat vector-like paint: every identity feature (star, trim chain, boot chevrons, eye ring) has a hard bounded boundary, which grimoire/review/gates_reference.md requires to be gated on GEOMETRY via vertex regions, never as a texture. There is no photographic albedo to recover, so de-lighting and bake_projected_texture add nothing and would only blur those boundaries.",
+    "confidence": 0.9
+  },
+  "pipelineRouting": {
+    "version": 1,
+    "track": "character-v1.5",
+    "source": "explicit",
+    "status": "resolved",
+    "classification": {
+      "kind": "character",
+      "confidence": 1.0,
+      "evidenceRefs": ["pipeline-routing:explicit:character-v1.5"],
+      "provider": "pipeline-routing-cli",
+      "version": "1"
+    },
+    "conflicts": []
+  },
+  "localSpecSearch": {
+    "collection": "core_3d",
+    "query": "chibi character hair shell cloth trim vertex region proportion",
+    "index": {"status": "rebuilt", "reason": "missing"},
+    "matches": []
+  }
+}

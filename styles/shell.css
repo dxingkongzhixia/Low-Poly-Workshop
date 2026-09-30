@@ -1,0 +1,348 @@
+/* ============================================================================
+   低模工坊 · 统一外壳（所有分支页共用）
+   —— 顶部导航条 + 主题变量 + 各页固定定位元素的让位规则
+   ========================================================================== */
+/* ============================================================================
+ *  主题变量 —— 深色（默认）/ 浅色
+ *  ★ 页面自己的 <style> 里**不要再写死颜色**，一律用这里的变量。
+ *    切换主题 = 在 <html> 上换 data-theme，不用重新加载页面。
+ * ========================================================================== */
+:root{
+  --shell-h:38px;
+
+  /* ---- 表面 ---- */
+  --bg:#152833;          /* 页面底色 */
+  --bg2:#1b2b34;         /* 输入框 / 次级底 */
+  --panel:#1f3846;       /* 面板 */
+  --panel2:#274554;      /* 面板（次级）/ 按钮 */
+  --raise:#12222b;       /* 浮起来的：下拉、缩略图底 */
+  --sunken:#101c23;      /* 凹进去的：代码块 */
+  --deep:#16252e;        /* 提示框 */
+  --deep2:#0b1418;       /* 最深（阅读器底色） */
+  --row:#1a2f3b;         /* 列表行 */
+  --row-hover:#243f4d;
+  --chip-bg:#152028;     /* 分区标题条 */
+
+  /* ---- 线条 ---- */
+  --line:#3a5b6c;
+  --line2:#3a5563;
+  --line3:#2b414c;
+  --line4:#1d2b33;
+  --hairline:rgba(255,255,255,.07);
+
+  /* ---- 玻璃 / 遮罩 ---- */
+  --glass:rgba(31,56,70,.95);      /* 固定侧栏 */
+  --glass2:rgba(24,45,57,.72);     /* 说明块 */
+  --note:rgba(21,40,51,.85);
+  --scrim:rgba(21,40,51,.92);
+
+  /* ---- 文字 ---- */
+  --ink:#eef2f3;
+  --dim:#acc3d1;
+  --accent:#bfd8e6;
+  --muted:#8fa3ad;
+  --muted2:#6f8b96;
+  --muted3:#5f7a88;
+
+  /* ---- 语义 ---- */
+  --green:#4fe07a;
+  --bad:#ff6b6b;
+  --ok-bg:#16302a; --ok-bg2:#2b6b46; --ok-line:#3f9b66; --ok-hover:#348456;
+  --ok-ink:#eaffef; --ok-ink2:#7ff0b0; --ok-ink3:#6ad39a;
+  --danger-bg:#5c2b2b; --danger-line:#8a4444;
+  --warn:#e0553c; --warn-ink:#ffb3a4; --warn-ink2:#ff9c86; --warn-ink3:#ffc9bf;
+  --warn-bg:#1e2a1c; --warn-bg2:#2a1a1a; --warn-bg3:#241a1a; --warn-line:#a4433a;
+  --info:#5bd0ff; --info-ink:#bfe6ff; --info-bg:#132630;
+  --gold:#ffe08a; --gold2:#c9b06a; --mint:#9fd8c0;
+  --hover:#33596c; --hover2:#2b5568;
+  --sel:#24486b; --sel-line:#3c74a8; --sel-ink:#e9f4ff;
+  --bar1:#1b3240; --bar2:#152833;   /* 导航条渐变（上→下） */
+  --shadow:rgba(0,0,0,.35);
+  --accent-color:#4fe07a;          /* 原生控件的强调色（checkbox/range） */
+  --glow-green:rgba(79,224,122,.35);
+  --glow-green-soft:rgba(79,224,122,.15);
+  --glow-accent:rgba(191,216,230,.18);
+  --glow-gold:rgba(255,180,84,.55);
+  --glow-warn:rgba(255,164,142,.4);
+}
+
+/* ============================================================================
+ *  浅色模式
+ *  在 <html data-theme="light"> 时生效。切换入口在导航条最右边的太阳/月亮按钮，
+ *  选择存在 localStorage 的 lowpoly-theme，页面 <head> 里有一行内联脚本先套用（防闪）。
+ * ========================================================================== */
+:root[data-theme="light"]{
+  /* 表面：从「深蓝钢」翻成「冷白灰」，层次靠白/灰差而不是亮度差 */
+  --bg:#eef3f6;
+  --bg2:#f7fafb;
+  --panel:#ffffff;
+  --panel2:#e8eff3;
+  --raise:#f4f8fa;
+  --sunken:#f4f8fa;
+  --deep:#f2f7f9;
+  --deep2:#f7fafb;
+  --row:#f2f7f9;
+  --row-hover:#e3edf2;
+  --chip-bg:#e8eff3;
+
+  /* 线条：浅色下的分隔线要够淡但不能没有 */
+  --line:#c9d8e0;
+  --line2:#cfdce3;
+  --line3:#d5e1e7;
+  --line4:#e4edf1;
+  --hairline:rgba(24,54,70,.08);
+
+  /* 玻璃：白底微透，仍然能透出后面的画布 */
+  --glass:rgba(255,255,255,.96);
+  --glass2:rgba(244,248,250,.9);
+  --note:rgba(238,244,247,.95);
+  --scrim:rgba(238,244,247,.96);
+
+  /* 文字：主文字要够黑，次要文字要够灰但不发蓝 */
+  --ink:#16272f;
+  --dim:#5a7180;
+  --accent:#22607f;
+  --muted:#7d919c;
+  --muted2:#93a5ae;
+  --muted3:#6b818d;
+
+  /* 语义：浅底上的强调色要压暗，否则白得看不见 */
+  --green:#0f9d58;
+  --bad:#d23f3f;
+  --ok-bg:#e3f6eb; --ok-bg2:#1f9d55; --ok-line:#8ecfaa; --ok-hover:#17854a;
+  --ok-ink:#0d5c33; --ok-ink2:#12693c; --ok-ink3:#12693c;
+  --danger-bg:#fbe4e2; --danger-line:#e0a49d;
+  --warn:#c2410c; --warn-ink:#a4300f; --warn-ink2:#b4442c; --warn-ink3:#9b3a22;
+  --warn-bg:#fff6e0; --warn-bg2:#fdeceb; --warn-bg3:#fdeceb; --warn-line:#e2a9a3;
+  --info:#1a76a8; --info-ink:#1a5e85; --info-bg:#e8f4fa;
+  --gold:#8a6d10; --gold2:#8a6d10; --mint:#1a7f5e;
+  --hover:#dbe7ee; --hover2:#d2e0e8;
+  --sel:#dcebfa; --sel-line:#83b3de; --sel-ink:#15486f;
+  --bar1:#ffffff; --bar2:#eef3f6;
+  --shadow:rgba(24,54,70,.14);
+  --accent-color:#1f9d55;
+  /* 浅色下光晕要收着，否则白底上一圈绿会脏 */
+  --glow-green:rgba(31,157,85,.22);
+  --glow-green-soft:rgba(31,157,85,.10);
+  --glow-accent:rgba(34,96,127,.14);
+  --glow-gold:rgba(200,140,20,.35);
+  --glow-warn:rgba(180,68,44,.22);
+}
+
+/* 浅色下的阴影要更轻，否则像糊了一层灰 */
+:root[data-theme="light"] .card{ box-shadow:none; }
+:root[data-theme="light"] .card:hover{ box-shadow:0 8px 22px var(--shadow); }
+
+/* ---------- 页面底色 / 字色（所有页共用；之前只有启动页设了，其它页会变白底黑字）---------- */
+html{ background:var(--bg); }
+body{
+  margin:0; min-height:100%; background:var(--bg); color:var(--ink);
+  font-family:Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+a{ color:var(--accent); }
+code{ font-family:Consolas,Menlo,monospace; }
+/* 注意：这里**不要**再放 `.scroll{max-height:...}` 之类「看似通用」的工具类。
+   editor / mixer 里 .scroll 是「面板里可滚动的正文区」（.scroll{overflow:auto;flex:1}），
+   而 shell.css 是在页面自己的 <style> **之后**加载的 —— 同优先级会直接盖掉，
+   结果面板正文被限高 220px、下面留一大片空白。
+   各页自己定义自己的 .scroll，这里不插手。 */
+
+/* ---------- 顶部导航 ---------- */
+#shellbar{
+  position:fixed; left:0; right:0; top:0; height:var(--shell-h); z-index:500;
+  display:flex; align-items:center; gap:4px; padding:0 10px;
+  background:linear-gradient(var(--bar1),var(--bg)); border-bottom:1px solid var(--line);
+  color:var(--ink); font:12px/1 Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  box-sizing:border-box; user-select:none;
+  /* 内容比窗口宽时宁可裁掉，也不要把整页撑出横向滚动条 */
+  overflow:hidden;
+}
+#shellbar .brand{
+  font-weight:800; letter-spacing:.08em; color:var(--accent); text-decoration:none;
+  margin-right:10px; display:flex; align-items:center; gap:6px; white-space:nowrap;
+}
+#shellbar .brand:hover{ color:var(--ink); }
+#shellbar .brand i{ font-style:normal; color:var(--green); }
+#shellbar a.tab{
+  color:var(--dim); text-decoration:none; padding:6px 11px; border-radius:6px;
+  border:1px solid transparent; white-space:nowrap; transition:.12s; flex:none;
+}
+#shellbar a.tab:hover{ background:var(--panel2); border-color:var(--line); color:var(--ink); }
+#shellbar a.tab.on{ background:var(--ok-bg2); border-color:var(--ok-line); color:var(--ok-ink); font-weight:700; }
+/* 竖线：分隔「工具页」和「信息页」 */
+#shellbar .vsep{ width:1px; height:16px; background:var(--line); margin:0 6px; flex:none; }
+/* 信息页标签（AI 工作流 / 系统状态 / 文档）：用左侧小圆点区分「这不是工具，是看资料的页」
+   ⚠ 类名必须够独特。这里**不能**用 .sec —— editor / mixer / lab / model-import 这四个
+   工具页自己都有 .sec{ border;margin-bottom;overflow:hidden }（面板里的小区块），
+   导航条这一排 <a class="tab sec"> 会连带命中，被压窄、被上移，几个页面还不一样高。 */
+#shellbar a.tab.infotab{ padding-left:16px; position:relative; }
+#shellbar a.tab.infotab::before{
+  content:''; position:absolute; left:7px; top:50%; width:4px; height:4px; margin-top:-2px;
+  border-radius:50%; background:var(--muted3);
+}
+#shellbar a.tab.infotab:hover::before{ background:var(--accent); }
+#shellbar a.tab.infotab.on{ background:var(--sel); border-color:var(--sel-line); color:var(--sel-ink); font-weight:700; }
+#shellbar a.tab.infotab.on::before{ background:var(--green); }
+/* 不在启动页时（点了会先跳回启动页），暗一点 */
+#shellbar a.tab.off-page{ color:var(--muted3); }
+#shellbar .spacer{ flex:1; }
+#shellbar .hint{ color:var(--muted2); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  flex:0 1 auto; min-width:0; }   /* 空间不够时第一个被压缩/隐藏 */
+#shellbar .hint b{ color:var(--accent); font-weight:600; }
+
+/* ---- 导航条右侧两个实时指示：渲染显卡 / 接管的 AI Agent ---- */
+#shellbar .chip{
+  display:inline-flex; align-items:center; gap:5px; flex:none; text-decoration:none;
+  font-size:11px; line-height:1; padding:5px 9px; border-radius:14px;
+  background:var(--deep); border:1px solid var(--line); color:var(--dim);
+  white-space:nowrap; max-width:210px; transition:.14s; margin-left:6px;
+}
+#shellbar .chip svg{ width:12px; height:12px; flex:none; display:block; }
+#shellbar .chip .tx{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#shellbar .chip:hover{ background:var(--panel2); border-color:var(--accent); color:var(--ink); }
+#shellbar .chip.ok{ background:var(--ok-bg); border-color:var(--ok-bg2); color:var(--ok-ink2); }
+#shellbar .chip.ok svg{ filter:drop-shadow(0 0 3px var(--glow-green)); }
+#shellbar .chip.warn{ background:var(--warn-bg2); border-color:var(--warn-line); color:var(--warn-ink2); }
+#shellbar .chip.warn svg{ filter:drop-shadow(0 0 3px var(--glow-warn)); }
+#shellbar .chip.off{ background:var(--panel2); border-color:var(--line); color:var(--muted3); }
+
+/* ---- 浅色 / 深色切换按钮（在状态 chip 左边）
+   ⚠ 用 <span role="button"> 而不是 <button>：editor / mixer 这些页有通用的 `button{…}` 规则，
+     <button> 会被连带命中（CSS 撞车自查就不是 0 了）。键盘可达性在 shell.js 里补。 */
+#shellbar .tgl{
+  display:inline-flex; align-items:center; justify-content:center; flex:none;
+  width:24px; height:24px; padding:0; margin-left:4px; cursor:pointer;
+  background:var(--deep); border:1px solid var(--line); border-radius:50%;
+  color:var(--dim); transition:.14s; box-sizing:border-box;
+}
+#shellbar .tgl svg{ width:13px; height:13px; display:block; pointer-events:none; }
+#shellbar .tgl:hover{ background:var(--panel2); border-color:var(--accent); color:var(--accent); transform:rotate(-18deg); }
+#shellbar .tgl:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+:root[data-theme="light"] #shellbar .tgl{ background:#fff; }
+
+/* ---------- 各页固定元素让位 ---------- */
+body.has-shell #left,
+body.has-shell #right,
+body.has-shell #panel{ top:var(--shell-h) !important; }
+body.has-shell #hud,
+body.has-shell #toolbar,
+body.has-shell #stats{ top:calc(var(--shell-h) + 10px) !important; }
+body.has-shell #toast{ top:calc(var(--shell-h) + 8px) !important; }
+
+@media (max-width:860px){
+  #shellbar .hint{ display:none; }
+  #shellbar a.tab{ padding:6px 8px; }
+  #shellbar a.tab.infotab{ padding-left:14px; }
+}
+@media (max-width:1100px){
+  #shellbar .hint{ display:none; }             /* 先让位给两个状态 chip */
+}
+@media (max-width:820px){
+  #shellbar .chip{ max-width:120px; }
+}
+@media (max-width:640px){
+  #shellbar{ overflow-x:auto; }
+  #shellbar .brand{ margin-right:4px; }
+  #shellbar a.tab.infotab{ display:none; }
+  #shellbar .vsep{ display:none; }
+  #shellbar .chip{ display:none; }             /* 窄屏只留工具页 */
+}
+
+/* ---------- 启动页 ---------- */
+body.start{ overflow:auto; }
+.wrap{ max-width:1180px; margin:0 auto; padding:calc(var(--shell-h) + 40px) 24px 60px; }
+.hero h1{ margin:0 0 8px; font-size:30px; letter-spacing:.04em; }
+.hero h1 i{ font-style:normal; color:var(--green); }
+.hero p{ margin:0 0 6px; color:var(--dim); font-size:13.5px; line-height:1.75; }
+.hero .tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
+.hero .tags span{
+  font-size:11.5px; color:var(--dim); background:var(--panel); border:1px solid var(--line);
+  padding:4px 9px; border-radius:20px;
+}
+.cards{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; margin-top:30px; }
+.card{
+  display:flex; flex-direction:column; background:var(--panel); border:1px solid var(--line);
+  border-radius:12px; overflow:hidden; text-decoration:none; color:inherit;
+  transition:.16s; position:relative;
+}
+.card:hover{ transform:translateY(-3px); border-color:var(--accent); box-shadow:0 10px 28px var(--shadow); }
+.card .shot{ height:170px; background:var(--raise); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.card .shot img{ width:100%; height:100%; object-fit:cover; object-position:center 18%; display:block; }
+.card .shot .ph{ color:var(--muted2); font-size:34px; }
+.card .bd{ padding:13px 15px 15px; display:flex; flex-direction:column; gap:7px; flex:1; }
+.card .bd h3{ margin:0; font-size:15px; letter-spacing:.02em; }
+.card .bd p{ margin:0; color:var(--dim); font-size:12px; line-height:1.7; flex:1; }
+.card .bd .k{ display:flex; flex-wrap:wrap; gap:5px; }
+.card .bd .k em{ font-style:normal; font-size:10.5px; color:var(--accent);
+  background:var(--raise); border:1px solid var(--line); padding:2px 7px; border-radius:4px; }
+.card .go{ font-size:11.5px; color:var(--green); }
+.card.wide{ grid-column:1 / -1; flex-direction:row; }
+.card.wide .shot{ width:320px; height:auto; flex:none; }
+@media (max-width:760px){ .card.wide{ flex-direction:column; } .card.wide .shot{ width:auto; height:170px; } }
+.foot{ margin-top:34px; padding-top:16px; border-top:1px solid var(--line);
+  color:var(--muted2); font-size:11.5px; line-height:1.9; }
+.foot code{ color:var(--accent); background:var(--raise); padding:1px 5px; border-radius:3px; }
+
+/* ============================================================================
+   独立页面（AI 工作流 / 系统状态 / 文档）共用
+   ========================================================================== */
+.page{ max-width:1180px; margin:0 auto; padding:calc(var(--shell-h) + 32px) 24px 60px; }
+.pagehead{ margin-bottom:24px; }
+.pagehead h1{ margin:0 0 8px; font-size:26px; letter-spacing:.04em; }
+.pagehead h1 i{ font-style:normal; color:var(--green); }
+.pagehead p{ margin:0 0 4px; color:var(--dim); font-size:13px; line-height:1.8; max-width:800px; }
+.pagehead .tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.pagehead .tags span{ font-size:11.5px; color:var(--dim); background:var(--panel);
+  border:1px solid var(--line); padding:4px 9px; border-radius:20px; }
+.sec-h{ margin:34px 0 0; font-size:13px; letter-spacing:.14em; color:var(--dim);
+  text-transform:uppercase; border-bottom:1px solid var(--line); padding-bottom:8px; }
+.cards + .sec-h{ margin-top:38px; }
+.sec-h:first-child{ margin-top:0; }
+
+/* ---- 状态卡 ---- */
+.sys{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; margin-top:16px; }
+.sys .box{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+.sys .box h4{ margin:0 0 10px; font-size:12px; color:var(--accent); letter-spacing:.06em; }
+.sys .box .v{ font-size:12.5px; line-height:1.8; color:var(--ink); word-break:break-word; }
+.sys .box .v code, .sys .box .dim code{ background:var(--sunken); padding:1px 5px; border-radius:3px; font-size:11px; }
+.sys .box .dim{ color:var(--dim); font-size:11.5px; line-height:1.75; }
+.sys .box.ok{ border-color:var(--ok-bg2); }
+.sys .box.ok h4{ color:var(--ok-ink3); }
+.sys .box.warn{ border-color:var(--warn-line); background:var(--warn-bg3); }
+.sys .box.warn h4{ color:var(--warn-ink2); }
+.sys .box .steps{ margin:8px 0 0; padding-left:18px; font-size:11.5px; line-height:1.8; color:var(--warn-ink3); }
+.sys .btns{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.sys .btns button{ background:var(--panel2); color:var(--ink); border:1px solid var(--line);
+  border-radius:5px; padding:6px 12px; font-size:12px; cursor:pointer; }
+.sys .btns button:hover{ background:var(--hover); border-color:var(--accent); }
+.sys .btns button.danger{ border-color:var(--warn-line); color:var(--warn-ink3); }
+.sys .btns button.danger:hover{ background:var(--danger-bg); }
+
+/* ---- 文档列表 ---- */
+.doclist{ display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; margin-top:16px; }
+.doclist a{ display:block; background:var(--panel); border:1px solid var(--line); border-radius:9px;
+  padding:12px 15px; text-decoration:none; color:var(--ink); font-size:13px; transition:.14s; }
+.doclist a:hover{ border-color:var(--accent); background:var(--panel2); transform:translateY(-2px); }
+.doclist a span{ display:block; color:var(--dim); font-size:11.5px; margin-top:5px; line-height:1.6; }
+.doclist a b{ color:var(--green); font-weight:600; }
+
+/* ---- Agent 徽章 ---- */
+.agent-tag{ display:inline-block; font-size:11px; padding:2px 8px; border-radius:10px;
+  background:var(--ok-bg); border:1px solid var(--ok-bg2); color:var(--green); vertical-align:middle; }
+.agent-tag.none{ background:var(--panel2); border-color:var(--line); color:var(--dim); }
+
+/* ---- 卡片：图形/Logo 不裁切 ---- */
+.card.soon{ opacity:.55; pointer-events:none; }
+.card .shot.contain{ background:var(--deep2); }
+.card .shot.contain img{ object-fit:contain; object-position:center; }
+
+/* ---- 代码块（页面里贴命令用）---- */
+pre.cmd{ background:var(--deep2); border:1px solid var(--line); border-left:3px solid var(--accent);
+  border-radius:7px; padding:12px 14px; overflow:auto; font:12px/1.75 Consolas,Menlo,monospace;
+  color:var(--ink); margin:12px 0; }
+pre.cmd b{ color:var(--green); font-weight:600; }
+table.tbl{ width:100%; border-collapse:collapse; margin-top:14px; font-size:12.5px; }
+table.tbl th, table.tbl td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); line-height:1.7; }
+table.tbl th{ color:var(--accent); font-weight:600; font-size:11.5px; letter-spacing:.05em; }
+table.tbl td code{ background:var(--sunken); padding:1px 5px; border-radius:3px; font-size:11.5px; }

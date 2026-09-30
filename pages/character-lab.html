@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>企鹅物流 · 人物实验室（原版模型）</title>
+<style>
+  /* 主题变量统一在 styles/shell.css（本页不再重复定义） */
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:Arial,"PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden}
+  canvas{display:block}
+  #panel{position:fixed;top:0;right:0;height:100%;width:340px;background:var(--glass);
+    border-left:1px solid var(--line);display:flex;flex-direction:column;z-index:20}
+  #panel header{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+  #panel header h1{margin:0;font-size:15px;letter-spacing:.1em;font-weight:800}
+  #panel header p{margin:6px 0 0;font-size:11px;color:var(--dim);line-height:1.5}
+  #scroll{overflow:auto;flex:1;padding:12px 14px 90px}
+  .sec{margin-bottom:14px;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .sec>h2{margin:0;padding:8px 10px;font-size:12px;letter-spacing:.06em;background:var(--panel2);
+    color:var(--accent);font-weight:700;cursor:pointer;user-select:none;display:flex;justify-content:space-between}
+  .sec>h2 span{color:var(--dim);font-size:10px;font-weight:400}
+  .sec .body{padding:10px;display:flex;flex-direction:column;gap:9px}
+  .sec.collapsed .body{display:none}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .grid button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:4px;
+    padding:7px 6px;font-size:12px;cursor:pointer;transition:.15s}
+  .grid button:hover{background:var(--hover);border-color:var(--accent)}
+  .grid button.on{background:var(--ok-bg2);border-color:var(--ok-line);color:var(--ok-ink)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+  .row label{color:var(--dim)}
+  .row .val{color:var(--ink);font-variant-numeric:tabular-nums;font-size:11px;min-width:34px;text-align:right}
+  input[type=range]{flex:1;accent-color:var(--accent);height:18px}
+  input[type=color]{width:46px;height:22px;padding:0;border:1px solid var(--line);background:none;border-radius:3px;cursor:pointer}
+  select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:3px 6px;font-size:12px}
+  .swatch{display:flex;flex-direction:column;gap:6px}
+  .swatch .row label{font-size:12px}
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .btn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:7px 8px;font-size:12px;cursor:pointer}
+  .btn:hover{background:var(--hover);border-color:var(--accent)}
+  .btn.primary{background:var(--ok-bg2);border-color:var(--ok-line)}
+  .btn.primary:hover{background:var(--ok-hover)}
+  #stats{position:fixed;left:16px;top:14px;z-index:15;font-size:11px;color:var(--dim);
+    background:var(--glass2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;line-height:1.7}
+  #tips{position:fixed;left:16px;bottom:14px;z-index:15;font-size:11px;color:var(--dim);
+    background:var(--glass2);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+  #toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:40;background:var(--ok-bg2);
+    border:1px solid var(--ok-line);color:var(--ok-ink);padding:8px 16px;border-radius:6px;font-size:12px;opacity:0;transition:.25s}
+  #toast.on{opacity:1}
+  @media(max-width:780px){#panel{width:100%;height:46%;top:auto;bottom:0;border-left:0;border-top:1px solid var(--line)}#tips{display:none}}
+</style>
+<script>/* 主题：在样式生效前先套用一次，避免深→浅闪白 */try{if(localStorage.getItem('lowpoly-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
+<link rel="stylesheet" href="../styles/shell.css">
+<script src="../src/shell.js" defer></script>
+</head>
+<body>
+<div id="stats">…</div>
+<div id="tips">左键拖动旋转 · 滚轮缩放 · 右键平移</div>
+<div id="toast"></div>
+<div id="panel">
+  <header>
+    <h1>人物实验室 · 原版模型</h1>
+    <p>模型代码逐字提取自原作 bundle<br>XT(id) / KT 调色板 / 原创 RoundedBoxGeometry</p>
+  </header>
+  <div id="scroll"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { XT, KT, AT, It, Bt, Q } from '../src/characters.orig.js';
+import { attachFace } from '../src/characters.face.js';
+import { Store, gpuInfo, gpuAdvice } from '../src/characters.store.js';
+import { initHires, buildHires, HIRES_VARIANTS, ek, NE, HIRES_PALETTES } from '../src/characters.hires2.js';
+let hiresReady = false;
+
+/* ------------------------------------------------------------------ 名单 */
+const ROSTER = [
+  ['lappland','拉普兰德'],['texas','德克萨斯'],['exusiai','能天使'],['croissant','可颂'],
+  ['sora','空'],['mostima','莫斯提马'],['chen','陈'],['hoshiguma','星熊'],
+  ['swire','诗怀雅'],['emperor','大帝'],['lee','老鲤'],['aak','阿'],
+  ['hung','吽'],['waaifu','槐琥']
+];
+const NAME = Object.fromEntries(ROSTER);
+
+/* ------------------------------------------------------------------ 原厂快照
+ * 「还原该干员配色」要恢复到**原厂**调色板。
+ * ⚠ 不能靠 `delete KT[id]` 来还原 —— src/characters.orig.js 里 XT(id) 是
+ *   `let t = KT[e]` 然后直接读 t.coat / t.trim …，删掉 KT[id] 会抛
+ *   TypeError: Cannot read properties of undefined (reading 'coat')。
+ *   （AT 那边有 `AT[e] ?? AT.texas` 兜底，删了没事，但统一用快照更省心。）
+ * 所以启动时深拷贝一份，还原 = 覆盖回去。
+ * -------------------------------------------------------------------------- */
+const KT0 = JSON.parse(JSON.stringify(KT));
+const AT0 = JSON.parse(JSON.stringify(AT));
+
+/* ============================================================================
+ * ★ 新增模型（独立模块 —— **绝不和原作 14 人混在一起**，避免数据污染）
+ *   数据来自 NewlyAddedModelList / NewlyAddedModelTemporaryList（服务端 /api/models）
+ *   构建方式：直接用编辑器导出的 model.js 工厂函数（不重复实现一套构建器）
+ *     new Function('THREE','Q','XT','attachFace', src + '; return build_xxx;')
+ * ========================================================================== */
+const NEW = { list: [], factories: {}, error: null, inited: false };
+async function loadNewList(){
+  try{
+    const r = await Store.listModels();
+    NEW.list = [ ...(r.confirmed||[]).map(m=>({ ...m, where:'已确认' })),
+                 ...(r.temporary||[]).map(m=>({ ...m, where:'待确认' })) ];
+    NEW.error = null;
+  }catch(e){ NEW.list = []; NEW.error = '读不到模型列表（tools/_serve.js 起来了吗？）：'+(e.message||e); }
+  NEW.inited = true;
+  return NEW.list;
+}
+async function loadNewFactory(id){
+  if(NEW.factories[id]) return NEW.factories[id];
+  const r = await Store.getModel(id);
+  if(!r || !r.spec) throw new Error('模型数据为空');
+  if(!r.js) throw new Error('这个模型只存了规格（spec），没有 model.js 工厂 —— 存的时候别关 withJs');
+  const src = r.js;
+  const m = src.match(/function\s+(build_[A-Za-z0-9_$]+)\s*\(/);
+  if(!m) throw new Error('model.js 里找不到 build_xxx 工厂函数');
+  const mod = src + '\n;return ' + m[1] + ';';
+  const fn = new Function('THREE','Q','XT','attachFace', mod)(THREE, Q, XT, attachFace);
+  if(typeof fn !== 'function') throw new Error('工厂函数不可用');
+  NEW.factories[id] = fn;
+  return fn;
+}
+
+/* ==========================================================================
+ * 把**权威角色清单**发布给服务端（AI Agent 靠 /api/characters 发现有哪些角色）
+ *
+ * 为什么由这个页面发：只有它同时知道
+ *   ① 低模 14 人的 id + 中文名（ROSTER）
+ *   ② 哪些人有高模、有哪几个变体（HIRES_VARIANTS，来自 src/characters.hires2.js）
+ * 服务端自己扫 models/ 目录是猜不全的 —— texas / exusiai 共用 _shared-baseline.json，
+ * 文件名里根本没有它们的变体名。
+ *
+ * 静默失败：服务器没起 / 写不进去都不该影响页面。
+ * ========================================================================== */
+async function publishCharacters(){
+  try{
+    const { HIRES_VARIANTS } = await import('../src/characters.hires2.js');
+    const ref = await fetch('/data/reference-models.json').then(r => r.json()).catch(() => null);
+    const det = (ref && ref.models) || {};
+    const low = ROSTER.map(([id, label]) => ({
+      id, label,
+      build: 'XT(' + JSON.stringify(id) + ')',
+      faces: 'attachFace(...)  // src/characters.face.js',
+      details: '/data/reference-models.json#models.' + id,
+      rig: det[id] ? det[id].rig : null,
+      palette: det[id] ? det[id].palette : null,
+      meshCount: det[id] ? det[id].meshCount : null,
+      groups: det[id] && det[id].groups ? Object.keys(det[id].groups) : []
+    }));
+    const high = Object.keys(HIRES_VARIANTS).map(id => ({
+      id, label: NAME[id] || id, variants: HIRES_VARIANTS[id],
+      build: 'buildHires(' + JSON.stringify(id) + ', ' + JSON.stringify(HIRES_VARIANTS[id][0]) + ')',
+      baked: true,
+      files: HIRES_VARIANTS[id].map(v => '/models/' + id + '-' + v + '.json'),
+      sharedBaseline: '/models/_shared-baseline.json'
+    }));
+    await Store.publishCharacters({
+      schema: 'lowpoly-workshop/characters@1',
+      generatedBy: 'pages/character-lab.html 加载时自动发布',
+      note: '原作角色的权威索引。低模是程序化生成的（给 XT(id) 就能拿到几何），高模是烘焙好的 THREE.Object3D.toJSON。',
+      low, high,
+      sources: { lowPoly:'/characters.orig.js', face:'/characters.face.js',
+        highPoly:'/characters.hires2.js', reference:'/data/reference-models.json' }
+    });
+  }catch(e){ /* 服务端没起就算了，不影响页面 */ }
+}
+publishCharacters();
+
+const P = {
+  id: 'texas',
+  model: 'low',          // 'low' = XT 程序化 | 'high' = 烘焙高模 | 'new' = 新增模型
+  hiresVariant: 'classic',
+  newId: null,           // P.model==='new' 时用哪个新增模型
+  scale: 1.0,
+  pose: 'idle',
+  ring: true,
+  autoRotate: false
+};
+
+/* ------------------------------------------------------------ 场景 */
+const renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xa9b4ba);
+scene.fog = new THREE.Fog(0xa9b4ba, 14, 34);
+const camera = new THREE.PerspectiveCamera(32, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(1.5, 1.95, 5.8);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.20, 0);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 2.5; controls.maxDistance = 14;
+controls.maxPolarAngle = Math.PI*0.53;
+controls.update();
+
+scene.add(new THREE.HemisphereLight(0xcfe3ee, 0x22303a, 0.85));
+const key = new THREE.DirectionalLight(0xffffff, 2.0);
+key.position.set(3.4, 6.2, 4.6); key.castShadow = true;
+key.shadow.mapSize.set(2048,2048);
+key.shadow.camera.near = 0.5; key.shadow.camera.far = 24;
+key.shadow.camera.left=-4; key.shadow.camera.right=4; key.shadow.camera.top=5; key.shadow.camera.bottom=-1;
+key.shadow.bias = -0.0008; scene.add(key);
+const fill = new THREE.DirectionalLight(0x8fb6d0, 0.5); fill.position.set(-4,3,-4.5); scene.add(fill);
+
+// 地面
+function groundTexture(){
+  const c=document.createElement('canvas'); c.width=c.height=1024;
+  const x=c.getContext('2d');
+  x.fillStyle='#8d979c'; x.fillRect(0,0,1024,1024);
+  for(let i=0;i<9000;i++){ x.fillStyle=`rgba(0,0,0,${Math.random()*0.05})`; x.fillRect(Math.random()*1024,Math.random()*1024,2,2); }
+  x.strokeStyle='rgba(255,255,255,0.06)'; x.lineWidth=2;
+  for(let i=0;i<=16;i++){ const p=i*64; x.beginPath();x.moveTo(p,0);x.lineTo(p,1024);x.stroke();
+    x.beginPath();x.moveTo(0,p);x.lineTo(1024,p);x.stroke(); }
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace;
+  t.wrapS=t.wrapT=THREE.RepeatWrapping; return t;
+}
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(60,60),
+  new THREE.MeshStandardMaterial({map:groundTexture(), roughness:.92, metalness:.02}));
+ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+
+/* -------------------------------------------------- 模型：直接调用原作 XT */
+let parts = null, rig = null;
+
+function adapt(m){
+  // ⚠ 千万别写成 `m.root.userData.orig = m` —— 那是**循环引用**，
+  //    GLTFExporter 序列化 userData 时会抛 "Converting circular structure to JSON"，
+  //    结果就是「导出 GLB」永远失败（导出 JSON 却没事，因为那条路不碰 userData）。
+  //    用**不可枚举**属性：不参与 JSON.stringify / 对象展开，但调试时还能拿到。
+  Object.defineProperty(m.root.userData, 'orig', { value:m, enumerable:false, configurable:true, writable:true });
+  m.arms = m.arms || [];
+  m.legs = m.legs || [];
+  m.knees = m.knees || [];
+  m.bodyBase = {
+    y: m.body ? m.body.position.y : 0,
+    rx: m.body ? m.body.rotation.x : 0,
+    rz: m.body ? m.body.rotation.z : 0
+  };
+  m.headBase = m.head ? { y:m.head.position.y, rx:m.head.rotation.x, rz:m.head.rotation.z, ry:m.head.rotation.y } : null;
+  m.hairBase = m.hair ? m.hair.rotation.clone() : null;
+  m.coatBase = m.coatTails ? m.coatTails.rotation.clone() : null;
+  m.tailBase = m.tail ? m.tail.rotation.clone() : null;
+  // 只保留看起来像“肩/髋”枢轴的肢体（y 较高），避免转动脚部
+  m.armPivots = m.arms.filter(g=>g.position.y > 0.6);
+  m.legPivots = m.legs.filter(g=>g.position.y > 0.5);
+  m.motion = 0; m.gait = 0; m.crouch = 0;
+  return m;
+}
+
+let ringGroup = null;
+let buildToken = 0;
+
+function addRing(root){
+  if(!P.ring) return;
+  ringGroup = new THREE.Group();
+  const r1 = new THREE.Mesh(new THREE.RingGeometry(0.52,0.60,48),
+    new THREE.MeshBasicMaterial({color:0x4fe07a, transparent:true, opacity:0.9, side:THREE.DoubleSide}));
+  r1.rotation.x = -Math.PI/2; r1.position.y = 0.012;
+  const r2 = new THREE.Mesh(new THREE.RingGeometry(0.60,0.82,48),
+    new THREE.MeshBasicMaterial({color:0x4fe07a, transparent:true, opacity:0.16, side:THREE.DoubleSide}));
+  r2.rotation.x = -Math.PI/2; r2.position.y = 0.011;
+  ringGroup.add(r1, r2);
+  root.add(ringGroup);
+}
+
+/* 高模：按“名字”重新定位语义部件（clone 后 uuid 会变，name 不变） */
+function adaptHires(root, names){
+  const get = n => n ? root.getObjectByName(n) : null;
+  const list = a => (a||[]).map(get).filter(Boolean);
+  const m = {
+    root, hires:true,
+    body:get(names.body), head:get(names.head), hair:get(names.hair),
+    coatTails:get(names.coatTails), tail:get(names.tail),
+    arms:list(names.arms), legs:list(names.legs), knees:list(names.knees),
+    weapons:list(names.weapons)
+  };
+  m.bodyBase = { y: m.body? m.body.position.y:0, rx: m.body? m.body.rotation.x:0, rz: m.body? m.body.rotation.z:0 };
+  m.headBase = m.head ? { y:m.head.position.y, rx:m.head.rotation.x, ry:m.head.rotation.y, rz:m.head.rotation.z } : null;
+  m.hairBase = m.hair ? m.hair.rotation.clone() : null;
+  m.coatBase = m.coatTails ? m.coatTails.rotation.clone() : null;
+  m.tailBase = m.tail ? m.tail.rotation.clone() : null;
+  m.armPivots = m.arms.filter(g=>g.position.y > 0.6);
+  m.legPivots = m.legs.filter(g=>g.position.y > 0.5);
+  m.motion = 0; m.gait = 0; m.crouch = 0;
+  return m;
+}
+
+function buildCharacter(){
+  const token = ++buildToken;
+  if(parts){ scene.remove(parts.root); disposeGroup(parts.root); parts = null; }
+  if(ringGroup){ scene.remove(ringGroup); disposeGroup(ringGroup); ringGroup = null; }
+
+  // ---- 新增模型（和原作模型走完全独立的一条路）----
+  if(P.model === 'new'){
+    const rec = NEW.list.find(m=>m.id===P.newId);
+    if(!rec){ toast('先在上面「新增模型」里选一个'); P.model='low'; return; }
+    updateStats('新增模型载入中…');
+    loadNewFactory(rec.id).then(fn=>{
+      if(token !== buildToken) return;
+      const raw = fn();
+      const m = adapt(raw);
+      m.newModel = true;
+      m.root.scale.setScalar(P.scale);
+      scene.add(m.root);
+      parts = m;
+      captureColors(m.root);
+      computeGroupDefaults();
+      addRing(m.root);
+      updateStats();
+      renderPalettePanel();
+      toast('已载入新增模型 · ' + rec.name);
+    }).catch(e=>{
+      if(token !== buildToken) return;
+      toast('新增模型载入失败：'+(e.message||e));
+      updateStats('新增模型载入失败：'+(e.message||e));
+      P.model='low'; buildCharacter();
+    });
+    return;
+  }
+
+  const canHigh = P.model === 'high' && !!HIRES_VARIANTS[P.id];
+  if(canHigh){
+    if(!hiresReady){
+      updateStats('高模数据载入中…');
+      initHires().then(()=>{ hiresReady = true; if(token===buildToken) buildCharacter(); })
+                 .catch(e=>{ if(token!==buildToken) return; toast('高模载入失败：'+(e.message||e)); P.model='low'; buildCharacter(); });
+      return;
+    }
+    try{
+      const m = adapt(buildHires(P.id, P.hiresVariant));
+      m.hires = true;
+      m.root.scale.setScalar(P.scale);
+      scene.add(m.root);
+      parts = m;
+      captureColors(m.root);
+      computeGroupDefaults();
+      addRing(m.root);
+      updateStats();
+      renderPalettePanel();
+    }catch(e){ toast('高模构建失败：'+(e.message||e)); P.model='low'; buildCharacter(); }
+    return;
+  }
+
+  const m = adapt(XT(P.id));
+  m.root.scale.setScalar(It(P.id) * P.scale);
+  scene.add(m.root);
+  parts = m;
+  addRing(m.root);
+  updateStats();
+  renderPalettePanel();
+}
+
+function disposeGroup(g){
+  const keep = new Set();
+  g.traverse(o=>{ if(o.isMesh && o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(mm=>keep.add(mm)); } });
+  g.traverse(o=>{ if(o.isMesh) o.geometry?.dispose?.(); });
+  keep.forEach(mm=>mm.dispose?.());
+}
+
+function updateStats(msg){
+  const box = document.getElementById('stats');
+  const newRec = P.model==='new' ? NEW.list.find(m=>m.id===P.newId) : null;
+  const label = newRec ? newRec.name : (NAME[P.id]||P.id);
+  const sub   = newRec ? ('新增模型 · ' + newRec.where) : P.id;
+  if(msg){ box.innerHTML = `<b>${label}</b><br>${msg}`; return; }
+  if(!parts){ box.innerHTML = '…'; return; }
+  let tris=0, meshes=0;
+  parts.root.traverse(o=>{ if(o.isMesh && o.geometry){
+    meshes++;
+    const g=o.geometry; tris += (g.index? g.index.count : g.attributes.position.count)/3;
+  }});
+  const kind = parts.hires ? '高模（立绘）' : (parts.newModel ? '新增模型' : '低模 XT');
+  box.innerHTML =
+    `<b>${label}</b> · ${sub}<br>${kind} · 三角面 ≈ ${Math.round(tris).toLocaleString()} · 网格 ${meshes}`;
+}
+
+/* ------------------------------------------------------------ 动画 */
+function poseArms(arms, pose, t){
+  const set=(i,x,y,z)=>{ if(arms[i]) arms[i].rotation.set(x,y,z); };
+  switch(pose){
+    case 'idle':   break;
+    case 'carry':  set(0,-1.05,0,-0.22); set(1,-1.05,0,0.22); break;
+    case 'drink':  set(1,-2.35+Math.sin(t*1.2)*0.09,0,0.15); break;
+    case 'stretch':set(0,-2.60,0,0.10); set(1,-2.60,0,-0.10); break;
+    case 'dance':  set(0,-0.60+Math.sin(t*3)*0.55,0,0.20); set(1,-0.60+Math.sin(t*3+1)*0.55,0,-0.20); break;
+    case 'chat':   set(1,-0.65+Math.sin(t*2)*0.18,0,0.10); break;
+    case 'inspect':set(0,-0.70+Math.sin(t*1.8)*0.12,0,0.20); set(1,-0.70+Math.sin(t*1.8+0.5)*0.12,0,-0.20); break;
+    case 'snack':  set(1,-2.45+Math.sin(t*1.7)*0.12,0,0.12); break;
+  }
+}
+function animate(m, t, dt){
+  const walking = P.pose==='walk', running = P.pose==='run', crouch = P.pose==='crouch';
+  const target = (walking||running||crouch)?1:0;
+  const spd = running?11:(crouch?4.5:7);
+  m.motion += (target-m.motion)*Math.min(1,dt*12);
+  m.crouch += ((crouch?1:0)-m.crouch)*Math.min(1,dt*12);
+  m.gait += dt*spd*(0.15+0.85*m.motion);
+  const mo=m.motion, cr=m.crouch, g=m.gait;
+
+  if(m.body){
+    m.body.position.y = m.bodyBase.y + Math.abs(Math.sin(g))*mo*(running?0.05:0.028) + Math.sin(t*2)*0.010*(1-mo);
+    m.body.rotation.x = m.bodyBase.rx + cr*0.2 + (1-cr)*(running?0.1:0.015);
+    m.body.rotation.z = m.bodyBase.rz + Math.sin(g)*0.03*mo;
+  }
+  m.legPivots.forEach((l,i)=>{
+    l.rotation.x = -cr*0.8 + Math.sin(g)*mo*((i%2)? -1:1)*(running?0.6:0.38);
+  });
+  m.armPivots.forEach((a,i)=>{
+    const swing = Math.sin(g)*mo*((i%2)? -1:1)*(running?0.6:0.4);
+    a.rotation.x = a.rotation.x*(1-mo) + swing;
+  });
+  poseArms(m.armPivots, P.pose, t);
+
+  if(m.head){
+    m.head.rotation.y = (m.headBase?.ry||0) + Math.sin(t*0.7)*0.05;
+    m.head.rotation.z = (m.headBase?.rz||0) + Math.sin(t*1.3)*0.02;
+    m.head.rotation.x = (m.headBase?.rx||0) + cr*0.15;
+  }
+  if(m.hair && m.hairBase){
+    m.hair.rotation.z = m.hairBase.z + Math.sin(t*2.0)*0.045*(1+mo);
+    m.hair.rotation.x = m.hairBase.x + Math.sin(t*1.6)*0.035 + mo*0.05;
+  }
+  if(m.coatTails && m.coatBase){
+    m.coatTails.rotation.x = m.coatBase.x + Math.sin(t*1.7)*0.04 + mo*0.12;
+    m.coatTails.rotation.z = m.coatBase.z + Math.sin(g)*0.05*mo;
+  }
+  if(m.tail && m.tailBase){
+    m.tail.rotation.z = m.tailBase.z + Math.sin(t*1.4)*0.09;
+    m.tail.rotation.y = m.tailBase.y + Math.sin(t*0.9)*0.13;
+  }
+  if(ringGroup){ const k=1+Math.sin(t*2)*0.02; ringGroup.scale.set(k,k,1); }
+}
+
+/* 高模动画：直接调用原作的 ek()（由 rig 的 elbows/ankles/ears/chestLocks/soles 驱动） */
+const HIRES_ACTIVITY = {carry:'carry', drink:'drink', stretch:'stretch', dance:'dance', chat:'chat', inspect:'inspect', snack:'snack'};
+function animateHires(m, t, dt){
+  const walking = (P.pose==='walk'), running = (P.pose==='run'), sneak = (P.pose==='crouch');
+  const moving = walking || running || sneak;
+  const activity = HIRES_ACTIVITY[P.pose] || '';
+  const poseName = sneak ? 'sneak' : (moving ? (running ? 'run' : 'walk') : 'idle');
+  try{
+    ek(m, t, moving, P.id, false, false, dt, running, activity, false, sneak, 0);
+    NE(m, poseName);   // 原作：让武器按最低点高度贴合手部朝上（rig.elbows 推导）
+  }catch(e){
+    if(!m.__animErr){ m.__animErr = 1; console.warn('hires anim error:', e); }
+  }
+  if(ringGroup){ const k=1+Math.sin(t*2)*0.02; ringGroup.scale.set(k,k,1); }
+}
+
+/* ------------------------------------------------------------ 面板 */
+const hex = n => '#'+(n>>>0).toString(16).padStart(6,'0');
+const unhex = s => parseInt(s.slice(1),16);
+const scroll = document.getElementById('scroll');
+function section(title, hint, open, build){
+  const sec=document.createElement('section'); sec.className='sec'+(open?'':' collapsed');
+  const h=document.createElement('h2'); h.innerHTML=`${title}<span>${hint||''}</span>`;
+  h.onclick=()=>sec.classList.toggle('collapsed');
+  const b=document.createElement('div'); b.className='body';
+  sec.append(h,b); scroll.appendChild(sec); build(b); return b;
+}
+
+let opButtons=[], variantSelect=null;
+function refreshVariantSelect(){
+  if(!variantSelect) return;
+  const variants = HIRES_VARIANTS[P.id] || ['classic'];
+  if(!variants.includes(P.hiresVariant)) P.hiresVariant = variants[0];
+  variantSelect.innerHTML='';
+  for(const v of variants){ const o=document.createElement('option'); o.value=v; o.textContent=v; if(P.hiresVariant===v) o.selected=true; variantSelect.appendChild(o); }
+}
+section('干员', '原作 14 人', true, b=>{
+  const g=document.createElement('div'); g.className='grid';
+  for(const [id,cn] of ROSTER){
+    const btn=document.createElement('button'); btn.textContent=cn + (HIRES_VARIANTS[id]?' ★':''); btn.dataset.id=id;
+    if(HIRES_VARIANTS[id]) btn.title = '含高模：'+HIRES_VARIANTS[id].join(' / ');
+    btn.onclick=()=>{ P.id=id; markOps(); refreshVariantSelect();
+      if(P.model==='high' && !HIRES_VARIANTS[id]) P.model='low';
+      buildCharacter(); renderPalettePanel(true); toast('已载入 · '+cn); };
+    g.appendChild(btn); opButtons.push(btn);
+  }
+  b.appendChild(g);
+});
+function markOps(){ opButtons.forEach(x=>x.classList.toggle('on', x.dataset.id===P.id)); }
+
+/* ---- ★ 新增模型（独立分区：和上面 14 个原作角色**分开**，不混在一起 ---- */
+let newButtons=[], newBody=null;
+function markNew(){ newButtons.forEach(x=>x.classList.toggle('on', x.dataset.id===P.newId && P.model==='new')); }
+function renderNewList(){
+  if(!newBody) return;
+  const b=newBody; b.innerHTML='';
+  const info=document.createElement('div'); info.style.cssText='font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:6px';
+  if(NEW.error){ info.innerHTML='<span style="color:var(--warn-ink2)">'+NEW.error+'</span>'; b.appendChild(info); return; }
+  info.innerHTML = `存在 <code>NewlyAddedModelList/</code>（已确认）和 <code>NewlyAddedModelTemporaryList/</code>（待确认）。`
+    + `<br>共 <b>${NEW.list.length}</b> 个 —— 这些是**用户/AI 新做的**，不会混进上面 14 个原作角色。`;
+  b.appendChild(info);
+  const g=document.createElement('div'); g.className='grid'; newButtons=[];
+  if(!NEW.list.length){
+    const d=document.createElement('div'); d.style.cssText='font-size:11.5px;color:var(--dim);padding:6px 0';
+    d.textContent='（还没有新增模型）—— 去「部件编辑器」做，然后用「保存 · 新增模型」存进来';
+    b.appendChild(d);
+  }
+  for(const m of NEW.list){
+    const btn=document.createElement('button');
+    btn.textContent = m.name + (m.where==='待确认'?' ?':'');
+    btn.title = `${m.where} · ${m.parts||'?'} 部件 / ${m.triangles||'?'} 面 · ${m.note||''}`;
+    btn.dataset.id=m.id;
+    btn.onclick=()=>{ P.model='new'; P.newId=m.id; markNew(); markOps();
+      buildCharacter(); renderPalettePanel(true); };
+    g.appendChild(btn); newButtons.push(btn);
+  }
+  b.appendChild(g);
+  const bar=document.createElement('div'); bar.className='btns'; bar.style.marginTop='6px';
+  const rf=document.createElement('button'); rf.className='btn'; rf.textContent='刷新列表';
+  rf.onclick=async()=>{ await loadNewList(); renderNewList(); markNew(); toast('已刷新：'+NEW.list.length+' 个'); };
+  const gg=document.createElement('button'); gg.className='btn'; gg.textContent='回原作角色';
+  gg.onclick=()=>{ P.model='low'; P.newId=null; markNew(); buildCharacter(); renderPalettePanel(true); };
+  bar.append(rf,gg); b.appendChild(bar);
+}
+section('新增模型', 'NewlyAddedModelList', true, b=>{
+  newBody=b; renderNewList();
+  loadNewList().then(()=>renderNewList());
+});
+
+section('比例 / 动作', '', true, b=>{
+  // ★ 显卡诊断（软件渲染会明确告诉使用者怎么办）
+  {
+    const g = gpuInfo(), adv = gpuAdvice(g);
+    const d = document.createElement('div');
+    d.style.cssText = 'font-size:11px;line-height:1.7;padding:6px 8px;margin-bottom:8px;border-radius:5px;'
+      + (adv.level==='ok' ? 'background:var(--deep);border:1px solid var(--line)'
+                          : 'background:var(--warn-bg2);border:1px solid var(--warn-line);color:var(--warn-ink3)');
+    d.innerHTML = `<b>显卡</b>：${g.renderer||'未知'}<br>${g.webgl||'—'} · ${adv.title}`;
+    if(adv.level !== 'ok') d.innerHTML += '<br>' + adv.steps.slice(0,4).map(x=>'· '+x).join('<br>')
+      + '<br><span style="color:var(--dim)">完整排查见 docs/gpu.md</span>';
+    b.appendChild(d);
+  }
+  // 模型版本（低模 / 高模）
+  const modelRow=document.createElement('div'); modelRow.className='row';
+  const mLabel=document.createElement('label'); mLabel.textContent='模型版本';
+  const mSel=document.createElement('select');
+  for(const [v,t] of [['low','低模 XT（游戏内）'],['high','高模（立绘）'],['new','新增模型']]){
+    const o=document.createElement('option'); o.value=v; o.textContent=t; if(P.model===v) o.selected=true; mSel.appendChild(o);
+  }
+  mSel.onchange=()=>{
+    if(mSel.value==='high' && !HIRES_VARIANTS[P.id]){
+      mSel.value='low'; toast('该角色暂无独立高模，已用低模');
+      return;
+    }
+    if(mSel.value==='new' && !P.newId){
+      if(!NEW.list.length){ mSel.value='low'; toast('还没有新增模型 —— 先去「部件编辑器」存一个'); return; }
+      P.newId = NEW.list[0].id;
+    }
+    P.model=mSel.value; markNew(); markOps(); buildCharacter();
+  };
+  modelRow.append(mLabel,mSel); b.appendChild(modelRow);
+
+  // 高模变体（拉普兰德 classic / desolate）
+  const vRow=document.createElement('div'); vRow.className='row';
+  const vLabel=document.createElement('label'); vLabel.textContent='高模变体';
+  const vSel=document.createElement('select'); variantSelect=vSel;
+  const variants=HIRES_VARIANTS[P.id]||['classic'];
+  for(const v of variants){ const o=document.createElement('option'); o.value=v; o.textContent=v; if(P.hiresVariant===v) o.selected=true; vSel.appendChild(o); }
+  vSel.onchange=()=>{ P.hiresVariant=vSel.value; if(P.model==='high') buildCharacter(); };
+  vRow.append(vLabel,vSel); b.appendChild(vRow);
+
+  const row=document.createElement('div'); row.className='row';
+  const lab=document.createElement('label'); lab.textContent='整体缩放';
+  const inp=document.createElement('input'); inp.type='range'; inp.min=0.75; inp.max=1.4; inp.step=0.01; inp.value=P.scale;
+  const val=document.createElement('span'); val.className='val'; val.textContent=P.scale.toFixed(2);
+  inp.oninput=()=>{ P.scale=+inp.value; val.textContent=P.scale.toFixed(2); buildCharacter(); };
+  row.append(lab,inp,val); b.appendChild(row);
+
+  const poseRow=document.createElement('div'); poseRow.className='row';
+  const pl=document.createElement('label'); pl.textContent='动作';
+  const sel=document.createElement('select');
+  for(const [v,t] of [['idle','待机'],['walk','行走'],['run','奔跑'],['crouch','蹲行'],['carry','搬运'],['drink','饮用'],['stretch','舒展'],['dance','舞动'],['chat','交谈'],['inspect','查看'],['snack','吃零食']]){
+    const o=document.createElement('option'); o.value=v; o.textContent=t; if(P.pose===v)o.selected=true; sel.appendChild(o);
+  }
+  sel.onchange=()=>{ P.pose=sel.value; };
+  poseRow.append(pl,sel); b.appendChild(poseRow);
+
+  for(const [key,label] of [['ring','脚下光圈'],['autoRotate','自动旋转']]){
+    const w=document.createElement('label'); w.style.cssText='display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer';
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!P[key];
+    cb.style.accentColor='var(--green)';
+    cb.onchange=()=>{ P[key]=cb.checked; if(key==='ring') buildCharacter(); };
+    w.append(cb, document.createTextNode(label)); b.appendChild(w);
+  }
+});
+
+/* ---------------- 配色面板（低模 KT/AT ｜ 高模调色板 / 顶点色） ---------------- */
+const PAL_KEYS = [['hair','头发'],['shade','头发暗部'],['coat','服装'],['trim','饰边/白'],['eye','眼睛']];
+const HIRES_GROUPS = [['hair','头发'],['coat','服装'],['skin','皮肤'],['metal','武器/金属']];
+const DEFAULT_HI_GROUPS = {hair:0xc9d3d8, coat:0x1a1a1e, skin:0xf1d3bd, metal:0xbfc6cc};
+const hiGroupColors = {...DEFAULT_HI_GROUPS};
+const CAT2GROUP = {
+  '头发':'hair','兽耳':'hair',
+  '基础头型':'skin','基础手臂（含手）':'skin','基础腿部':'skin','基础身体':'skin',
+  '服装装饰':'coat','身体装饰':'coat','手臂装饰':'coat','腿部装饰':'coat','鞋子':'coat','尾巴':'coat','隐藏杯子':'coat','隐藏纸箱':'coat',
+  '武器／手持道具':'metal','额外装饰':'metal'
+};
+function captureColors(root){
+  root.traverse(o=>{
+    if(!o.isMesh) return;
+    const c=o.geometry && o.geometry.getAttribute && o.geometry.getAttribute('color');
+    if(c && !o.userData.__origColor) o.userData.__origColor = new Float32Array(c.array);
+  });
+}
+/* 取当前模型各分组的平均色，作为该角色的默认组色（未改动时重绘=恒等） */
+let hiGroupDefaults = {...DEFAULT_HI_GROUPS};
+function computeGroupDefaults(){
+  const acc={}, cnt={};
+  for(const k of Object.keys(DEFAULT_HI_GROUPS)){ acc[k]=[0,0,0]; cnt[k]=0; }
+  if(parts && parts.root) parts.root.traverse(o=>{
+    if(!o.isMesh) return;
+    const c=o.geometry && o.geometry.getAttribute && o.geometry.getAttribute('color');
+    if(!c) return;
+    const grp=CAT2GROUP[(o.userData && o.userData.studyCategory)||'']||'metal';
+    const n=c.count, step=Math.max(1,Math.floor(n/150));
+    for(let i=0;i<n;i+=step){ acc[grp][0]+=c.getX(i); acc[grp][1]+=c.getY(i); acc[grp][2]+=c.getZ(i); cnt[grp]++; }
+  });
+  const out={};
+  for(const k of Object.keys(acc)){
+    if(!cnt[k]){ out[k]=DEFAULT_HI_GROUPS[k]; continue; }
+    const col=new THREE.Color().setRGB(acc[k][0]/cnt[k], acc[k][1]/cnt[k], acc[k][2]/cnt[k]);
+    out[k]=col.getHex();
+  }
+  hiGroupDefaults=out;
+  Object.assign(hiGroupColors, out);
+}
+/* 非破坏式分组重绘：以原始平均色为基准，保留每个顶点的明暗比例。
+   有贴图集(map)的部件改为给材质染色(material.color) */
+function applyHiresGroupRecolor(){
+  if(!parts || !parts.hires) return;
+  const T={hair:new THREE.Color(hiGroupColors.hair), coat:new THREE.Color(hiGroupColors.coat),
+           skin:new THREE.Color(hiGroupColors.skin), metal:new THREE.Color(hiGroupColors.metal)};
+  parts.root.traverse(o=>{
+    if(!o.isMesh) return;
+    const grp = CAT2GROUP[(o.userData && o.userData.studyCategory)||''] || 'metal';
+    const t=T[grp];
+    const mats = Array.isArray(o.material)?o.material:[o.material];
+    const hasMap = mats.some(mm=>mm && mm.map);
+    if(hasMap){
+      mats.forEach(mm=>{ if(mm && mm.map){ mm.color.copy(t); mm.needsUpdate=true; } });
+      return;
+    }
+    const c=o.geometry.getAttribute('color');
+    if(!c || !o.userData.__origColor) return;
+    const src=o.userData.__origColor, n=c.count, e=1e-4;
+    let ar=0,ag=0,ab=0;
+    for(let i=0;i<n;i++){ ar+=src[i*3]; ag+=src[i*3+1]; ab+=src[i*3+2]; }
+    ar/=n; ag/=n; ab/=n;
+    for(let i=0;i<n;i++){
+      c.setXYZ(i, Math.min(1, t.r*(ar>e? src[i*3]  /ar:1)),
+                   Math.min(1, t.g*(ag>e? src[i*3+1]/ag:1)),
+                   Math.min(1, t.b*(ab>e? src[i*3+2]/ab:1)));
+    }
+    c.needsUpdate = true;
+  });
+}
+function colorRow(label, value, onChange){
+  const row=document.createElement('div'); row.className='row';
+  const l=document.createElement('label'); l.textContent=label;
+  const inp=document.createElement('input'); inp.type='color'; inp.value=value;
+  inp.oninput=()=>onChange(inp.value);
+  row.append(l,inp); return row;
+}
+const CN_COLOR = {skin:'皮肤',hair:'头发',hairLight:'发亮部',hairShade:'发暗部',ivory:'主色',black:'黑',fold:'褶皱',
+  red:'红',redLight:'红亮部',stocking:'袜',silver:'银',coat:'外套',lining:'内衬',blue:'蓝',blueLight:'蓝亮部'};
+let paletteBody=null, lastPalSig=null;
+function renderPalettePanel(force){
+  const b=paletteBody; if(!b) return;
+  const sig = P.model+'|'+P.id+'|'+P.hiresVariant;
+  if(!force && sig===lastPalSig) return;
+  lastPalSig = sig;
+  b.innerHTML='';
+  if(P.model==='high'){
+    const pal = HIRES_PALETTES[P.id+':'+P.hiresVariant];
+    const iris = pal && pal.iris && pal.iris.iris;
+    const wrap=document.createElement('div'); wrap.className='swatch';
+    for(const [k,label] of HIRES_GROUPS){
+      wrap.appendChild(colorRow(label, hex(hiGroupColors[k]), v=>{ hiGroupColors[k]=unhex(v); applyHiresGroupRecolor(); }));
+    }
+    if(Array.isArray(iris)){
+      for(let i=0;i<iris.length;i++){
+        wrap.appendChild(colorRow('虹膜 '+(i+1), hex(iris[i]), v=>{ iris[i]=unhex(v); buildCharacter(); }));
+      }
+    }
+    const btn=document.createElement('button'); btn.className='btn'; btn.textContent='还原默认配色';
+    btn.onclick=()=>{ buildCharacter(); renderPalettePanel(true); toast('已还原'); };
+    const note=document.createElement('div');
+    note.style.cssText='font-size:11px;color:var(--dim);line-height:1.5';
+    note.textContent='分组换色：实时重绘顶点色（保留明暗层次）；带贴图集的部件用材质染色。虹膜改动会重建高模。';
+    b.appendChild(note); b.appendChild(wrap); b.appendChild(btn);
+  }else{
+    const wrap=document.createElement('div'); wrap.className='swatch';
+    for(const [key,label] of PAL_KEYS){
+      const pal=KT[P.id]||{};
+      wrap.appendChild(colorRow(label, hex(pal[key]??0), v=>{ if(!KT[P.id])KT[P.id]={}; KT[P.id][key]=unhex(v); buildCharacter(); }));
+    }
+    for(let i=0;i<3;i++){
+      wrap.appendChild(colorRow('虹膜 '+(i+1), hex((AT[P.id]||[])[i]??0), v=>{
+        if(!AT[P.id]) AT[P.id]=[0xffffff,0xffffff,0xffffff];
+        AT[P.id][i]=unhex(v); buildCharacter();
+      }));
+    }
+    b.appendChild(wrap);
+  }
+}
+section('配色', '低模 KT/AT ｜ 高模调色板', false, b=>{ paletteBody=b; renderPalettePanel(true); });
+
+section('导出', '', true, b=>{
+  const g=document.createElement('div'); g.className='btns';
+  // ★ 第三个参数是**样式类**，函数是第四个……不，签名是 (文字, 样式类, 函数)。
+  //   曾经有 3 个调用写成 mk('截图', ()=>{}) 漏了样式类 → 函数被当成样式类，
+  //   按钮**根本没有点击处理器**（点了没反应）。这里做容错，漏传也认得出来。
+  const mk=(t,cls,fn)=>{
+    if(typeof cls==='function'){ fn=cls; cls=''; }
+    const x=document.createElement('button'); x.className='btn '+(cls||'');
+    x.textContent=t; x.onclick=fn; g.appendChild(x);
+    return x;
+  };
+  mk('导出 JSON','primary',()=>download(new Blob([JSON.stringify({id:P.id,scale:P.scale,palette:KT[P.id],iris:AT[P.id]},null,2)],{type:'application/json'}), P.id+'.json'));
+  mk('导出 GLB','primary', exportGLB);
+  mk('截图','', ()=>{ renderer.render(scene,camera); renderer.domElement.toBlob(bl=>download(bl,'character.png')); });
+  mk('还原该干员配色','', ()=>{
+    if(KT0[P.id]) KT[P.id] = Object.assign({}, KT0[P.id]);
+    // 原厂没有这个 id 时**不要 delete** —— XT() 读不到 KT[id] 会直接崩
+    if(AT0[P.id]) AT[P.id] = AT0[P.id].slice(); else delete AT[P.id];
+    buildCharacter(); renderPalettePanel(true); toast('已还原该干员配色');
+  });
+  mk('重置视角','', ()=>{ controls.target.set(0,0.95,0); camera.position.set(1.4,1.6,5.0); controls.update(); toast('视角已重置'); });
+  b.appendChild(g);
+});
+
+function download(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }
+function exportGLB(){
+  new GLTFExporter().parse(parts.root.clone(true), res=>{
+    download(new Blob([res],{type:'model/gltf-binary'}), P.id+'.glb'); toast('GLB 已导出');
+  }, e=>{ console.error(e); toast('导出失败：'+e); }, {binary:true});
+}
+let toastTimer=null;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('on');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('on'),1500); }
+
+/* ------------------------------------------------------------ 启动 */
+markOps(); buildCharacter(); renderPalettePanel(true);
+const clock = new THREE.Clock();
+function loop(){
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.05, clock.getDelta());
+  const t = clock.elapsedTime;
+  if(parts){ if(parts.hires) animateHires(parts, t, dt); else animate(parts, t, dt); }
+  if(P.autoRotate && parts) parts.root.rotation.y += dt*0.6;
+  controls.update();
+  renderer.render(scene, camera);
+}
+loop();
+
+window.__lab = { THREE, renderer, scene, camera, controls, P, KT, AT, XT, buildCharacter, animate, animateHires, ek, NE,
+  HIRES_VARIANTS, buildHires, initHires, HIRES_PALETTES, hiGroupColors, applyHiresGroupRecolor,
+  get parts(){ return parts; },
+  setView(x,y,z){ controls.target.set(0,1.20,0); camera.position.set(x,y,z); controls.update(); },
+  shot(){ renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); } };
+
+addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+</script>
+
+<script>
+  setTimeout(function(){
+    if(document.querySelector('canvas')) return;
+    var d=document.createElement('div');
+    d.style.cssText='position:fixed;inset:0;z-index:99;display:grid;place-items:center;background:var(--bg);color:var(--ink);font:14px/1.8 Arial,"Microsoft YaHei",sans-serif;text-align:center;padding:24px';
+    d.innerHTML='<div><h2 style="letter-spacing:.12em;margin:0 0 10px">需要本地服务器</h2><p style="color:var(--dim);margin:0">请在本目录运行 <code style="color:var(--ok-ink2)">node tools/_serve.js</code><br>然后访问 <a style="color:var(--ok-ink2)" href="http://localhost:8765/character-lab.html">http://localhost:8765/character-lab.html</a><br>或双击「启动-人物实验室.bat」</p></div>';
+    document.body.appendChild(d);
+  }, 6000);
+</script>
+</body>
+</html>

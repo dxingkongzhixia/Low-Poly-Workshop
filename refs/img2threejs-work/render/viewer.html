@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>img2threejs · Chibi Twin-Tail Character</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #f2f2f2; overflow: hidden; }
+  canvas { display: block; }
+  #label { position: fixed; left: 10px; top: 8px; font: 11px/1.35 monospace; color: #333; white-space: pre; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="label">loading…</div>
+<script type="module">
+import * as THREE from 'three';
+import {
+  createChibiTwinTailCharacterModel,
+  createChibiTwinTailCharacterLookDevLights,
+  createChibiTwinTailCharacterEnvironment,
+  frameChibiTwinTailCharacterCamera,
+  configureChibiTwinTailCharacterRenderer,
+} from './createObjectModel.js';
+
+const params = new URLSearchParams(location.search);
+const startView = params.get('view') || 'front';
+const lightMode = params.get('light') || 'neutral';
+// Blockout credit requires unlit, map-stripped evidence: every mesh is redrawn with its
+// material colour on a flat unlit shader so nothing in the review can come from lighting.
+const unlit = params.get('unlit') === '1';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+configureChibiTwinTailCharacterRenderer(renderer);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf2f2f2);
+
+const camera = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.05, 100);
+
+const model = createChibiTwinTailCharacterModel({ castShadow: true, receiveShadow: true });
+scene.add(model);
+
+scene.add(createChibiTwinTailCharacterLookDevLights(lightMode));
+// The environment map exists for view-dependent PBR finishes (clearcoat / anodized). This
+// subject is flat paint with no such finish, and IBL on its flat black facets blows a facet
+// to near-white, so the review render is env-free unless explicitly asked otherwise.
+if (params.get('env') !== '0') {
+  scene.environment = createChibiTwinTailCharacterEnvironment(renderer);
+}
+
+// Ground plane with a soft contact shadow, matching the reference sheet's ellipse.
+// Silhouette measurement must not see it: a soft shadow is not part of the subject.
+const showGround = params.get('ground') !== '0';
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(40, 40),
+  new THREE.ShadowMaterial({ opacity: 0.22 }),
+);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+ground.visible = showGround;
+scene.add(ground);
+
+const VIEWS = {
+  front: 0, right: 90, back: 180, left: 270, threequarter: 40,
+  // Axial review labels: the two orthogonal axes a single reference sheet can pin down.
+  'thickness-axis': 0, 'long-axis': 90,
+};
+
+if (unlit) {
+  model.traverse((o) => {
+    if (!o.isMesh) return;
+    const src = o.material;
+    o.material = new THREE.MeshBasicMaterial({
+      color: src && src.color ? src.color.clone() : new THREE.Color(0x888888),
+      wireframe: false,
+    });
+  });
+  // Lights are irrelevant under MeshBasicMaterial; the ground shadow would be a lie too.
+  ground.visible = false;
+}
+
+function setView(nameOrAzimuth) {
+  const az = typeof nameOrAzimuth === 'number' ? nameOrAzimuth : (VIEWS[nameOrAzimuth] ?? 0);
+  const margin = Number(params.get('margin') || 1.18);
+  frameChibiTwinTailCharacterCamera(camera, model, { azimuthDeg: az, elevationDeg: 0, margin });
+  const box = new THREE.Box3().setFromObject(model);
+  const sz = box.getSize(new THREE.Vector3());
+  const ct = box.getCenter(new THREE.Vector3());
+  const rows = [];
+  model.children.forEach((c) => {
+    const b = new THREE.Box3().setFromObject(c);
+    if (b.isEmpty()) return;
+    const s = b.getSize(new THREE.Vector3());
+    rows.push(`${c.name}[y ${b.min.y.toFixed(2)}..${b.max.y.toFixed(2)} x ${b.min.x.toFixed(2)}..${b.max.x.toFixed(2)}]`);
+  });
+  if (params.get('debug') === '1') {
+    const high = [];
+    model.traverse((o) => {
+      if (!o.isMesh) return;
+      const b = new THREE.Box3().setFromObject(o);
+      if (b.max.y > 1.02) {
+        const comp = o.userData.sculptComponent || {};
+        high.push(`${comp.id || o.name} y${b.min.y.toFixed(2)}..${b.max.y.toFixed(2)} ` +
+                  `x${b.min.x.toFixed(2)}..${b.max.x.toFixed(2)} z${b.min.z.toFixed(2)}..${b.max.z.toFixed(2)} ` +
+                  `mat=${comp.material || (o.material && o.material.name) || '?'}`);
+      }
+    });
+    rows.length = 0;
+    rows.push(...high);
+  }
+  document.getElementById('label').innerHTML =
+    `${nameOrAzimuth} az=${az} light=${lightMode} nodes=${Object.keys(model.userData.sculptRuntime.nodes).length}<br>` +
+    `bbox size ${sz.x.toFixed(2)} ${sz.y.toFixed(2)} ${sz.z.toFixed(2)}  centre y ${ct.y.toFixed(2)}<br>` +
+    rows.join('<br>');
+  renderer.render(scene, camera);
+}
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  setView(currentView);
+});
+
+let currentView = startView;
+setView(currentView);
+renderer.render(scene, camera);
+
+window.__setView = (v) => { currentView = v; setView(v); return true; };
+window.__ready = true;
+window.__stats = () => {
+  const rt = model.userData.sculptRuntime;
+  let tris = 0, meshes = 0;
+  model.traverse((o) => {
+    if (o.isMesh && o.geometry?.index) { tris += o.geometry.index.count / 3; meshes += 1; }
+    else if (o.isMesh && o.geometry?.attributes?.position) { tris += o.geometry.attributes.position.count / 3; meshes += 1; }
+  });
+  return { nodes: Object.keys(rt.nodes).length, meshes, triangles: Math.round(tris) };
+};
+</script>
+</body>
+</html>

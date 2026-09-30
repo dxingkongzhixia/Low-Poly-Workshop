@@ -1,0 +1,82 @@
+{
+  "sourceImage": "D:\\ROTK\\three.js\\img2threejs-work\\reference.png",
+  "views": {
+    "front": "analysis/views/front.png",
+    "right": "analysis/views/side.png",
+    "back": "analysis/views/back.png"
+  },
+  "measurementMethod": "Dark-component silhouette profile (analysis/measure3.py), skin colour-band locator (analysis/measure4.py) and eye-white blob locator (analysis/measure7.py) on the 2000x1125 sheet. All pixel values in sheet coordinates; the front view is centred on x=426.",
+  "anatomy": {
+    "styleHeads": 2.6,
+    "styleBand": "chibi / figurine (2-3 HU)",
+    "proportions": {
+      "headUnit": 0.379,
+      "torso": 1.8,
+      "legs": 0.84,
+      "shoulderWidth": 0.75,
+      "hipWidth": 0.62,
+      "evidenceRef": {
+        "crownY": 165,
+        "chinY": 488,
+        "hipY": 745,
+        "groundY": 1017,
+        "headHeightPx": 323,
+        "totalHeightPx": 852,
+        "headWidthPx": 369,
+        "shoulderWidthPx": 242,
+        "hipWidthPx": 200
+      },
+      "notes": "Head unit measured on the head+hair block (crown 165 to chin 488). The twin-tail spikes rise above the crown to y=123 and are excluded from the head unit. Legs are deliberately short (0.84 HU) and shoulders narrow relative to the head (0.75 HU < head width 369px) - both are chibi traits, not measurement error."
+    },
+    "pose": {
+      "type": "standing A-pose, symmetric, weight evenly distributed, feet slightly apart and parallel",
+      "jointAngles": {
+        "neck": [0, 0, 0],
+        "leftShoulder": [0, 0, -28],
+        "rightShoulder": [0, 0, 28],
+        "leftElbow": [0, 0, -5],
+        "rightElbow": [0, 0, 5],
+        "leftWrist": [0, 0, -3],
+        "rightWrist": [0, 0, 3],
+        "leftHip": [0, 0, -4],
+        "rightHip": [0, 0, 4],
+        "leftKnee": [0, 0, 0],
+        "rightKnee": [0, 0, 0],
+        "leftAnkle": [0, 0, 0],
+        "rightAnkle": [0, 0, 0]
+      },
+      "angleConvention": "degrees, z-component is abduction away from the body midline, read off the front view silhouette",
+      "confidence": 0.85
+    },
+    "faceLandmarks": {
+      "hairline": 0.597,
+      "eyeLine": 0.78,
+      "eyeSpacing": 0.22,
+      "noseBase": 0.876,
+      "mouthLine": 0.929,
+      "earTop": 0.356,
+      "earBottom": 0.82,
+      "normalisation": "fractions of the head+hair bounding box x[240..609] y[165..488]",
+      "eyeGeometry": {
+        "leftCentrePx": [356, 417],
+        "rightCentrePx": [497, 417],
+        "centreSeparationPx": 141,
+        "innerCornerGapPx": 81,
+        "diameterPx": 62,
+        "style": "blank white sclera, no visible iris or pupil, enclosed by a thick black limbal ring ~8px wide",
+        "asymmetry": "the +X (character's left, screen right) eye is partly occluded by a fringe lock; its visible width measures 52px against 69px - preserve this, it is in the reference"
+      },
+      "confidence": 0.9
+    },
+    "features": [
+      {"name": "chibi head-to-body ratio 2.6 HU", "evidenceRef": "crown 165 / chin 488 / ground 1017"},
+      {"name": "blank white ringed eyes", "evidenceRef": "eye-white blobs centred (356,417) and (497,417)"},
+      {"name": "blocky faceted hair shell with lateral ear-cup slabs", "evidenceRef": "dark head block x[240..609] y[165..488]"},
+      {"name": "exposed midriff band", "evidenceRef": "skin band y[626..706]"},
+      {"name": "bare thighs between shorts and boot tops", "evidenceRef": "skin band y[778..844]"},
+      {"name": "long twin-tails terminating at y~810, above the boot tops", "evidenceRef": "front-view silhouette width collapse at y=838"}
+    ],
+    "confidence": 0.88
+  },
+  "authoringInstruction": "Measured values above replace the extract_landmarks.py placeholders. Face landmarks are normalised to the head+hair bounding box, so eyeLine sits low (0.78) because the hair mass occupies the upper 60% of that box; this is the observed value, not a default."
+}

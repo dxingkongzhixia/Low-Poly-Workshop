@@ -1,0 +1,27 @@
+# 统一换行符：仓库里一律存 LF，检出时按平台还原
+# （否则 Windows 提交、Linux 拉取，每个文件都会显示「已修改」）
+* text=auto eol=lf
+
+# .bat / .cmd 在 cmd.exe 里**必须**是 CRLF，否则 goto/label 会出错
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制：不做行尾转换，也不要试图 diff
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.ico  binary
+*.vox  binary
+*.glb  binary
+*.woff2 binary
+
+# 游戏烘焙数据 / 第三方大 JSON：几 MB 一份，diff 没意义还拖慢 git
+models/*.json   -diff
+skills/**/*.json -diff
+
+# 文档与代码正常 diff（默认即可，写出来只是表明意图）
+*.md   text
+*.js   text
+*.css  text
+*.html text
