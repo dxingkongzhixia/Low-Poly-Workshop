@@ -1,13 +1,14 @@
 # 低模工坊 · Penguin Logistics Low-Poly Workshop
 
 > 把《企鹅物流·未登记访客》的 three.js 低模管线**逐字拆出来**，做成一套本地工具：
-> **拆分 · 调色 · 混搭 · 导入** —— 并且**可以被 AI Agent 直接接管**。
+> **拆分 · 程序化重建 · 调色 · 武器 · 导入** —— 并且**可以被 AI Agent 直接接管**。
 
 **零依赖 · 零构建 · 纯离线**（Node 起一个静态服务就能跑，没有 npm、没有打包器、没有 CDN）
 
 ```
-14 个原作低模   ·   6 个烘焙高模   ·   116 个 EditorAPI 命令
-27 步生成流水线  ·   8 个质量门     ·   深浅两套主题
+14 个原作低模（程序化重建，三角面逐人全等）  ·  2 个运行时角色（初音未来 / 黑岩射手）
+4 个工具 + 8 个页面  ·  3 角色 × 2 个烘焙高模变体
+100+ 条 EditorAPI 命令  ·  27 步生成流水线  ·  8 个质量门  ·  深浅两套主题
 ```
 
 ---
@@ -16,15 +17,16 @@
 
 **这是一个非商业的学习 / 研究项目。**
 
-- 本仓库里的 **`src/characters.orig.js` / `src/characters.face.js` / `src/characters.hires2.js` / `models/*.json`**
-  以及预览截图，是**从《企鹅物流·未登记访客》的客户端 bundle 里逐字提取**出来的。
+- 本仓库里的 **`src/characters.orig.js` / `src/characters.face.js` / `src/characters.hires2.js`**
+  / **`src/lowpoly/orig/*`**（14 个原作低模的程序化重建数据）/ `models/*.json`，以及预览截图，
+  是**从《企鹅物流·未登记访客》的客户端 bundle 里提取 / 逐图元还原**出来的。
   它们的**著作权归原游戏开发方 / 发行方所有**，本仓库不做任何权利主张。
-- 提取的唯一目的是**研究 low-poly 角色管线是怎么做的**（图元切分、骨架技巧、烘焙流程），
+- 提取的唯一目的是**研究 low-poly 角色管线是怎么做的**（图元切分、骨架技巧、程序化重建、烘焙流程），
   以及把这些手法整理成可复用的工具与文档。
 - **禁止用于任何商业用途。** 请勿用这些资源做二次发行、游戏解包合集、素材包之类的事。
-- 如果你是权利人，**认为这里的内容侵犯了你的权益，请提一个 issue 或发邮件**，
+- 如果你是权利人，**认为这里的内容侵犯了你的权益，请提一个 issue**，
   我会在第一时间删除对应文件（或整个仓库）。
-- 你自己写的模型（`NewlyAddedModelList/` 里的）版权归你。
+- 你自己写的模型（`NewlyAddedModelList/`、`NewlyAddedWeaponList/` 里的）版权归你。
 
 > 换句话说：**看可以、学可以、跑可以，别拿去卖，别当自己的作品发。**
 
@@ -37,27 +39,28 @@
 | | |
 |---|---|
 | **保真** | `boxify()` 按几何自带的 `primitiveVertexCounts` **精确**把原作模型切成可编辑图元 —— 不是包围盒近似。像素级 diff vs 原作 = **0.000%** |
+| **程序化优先** | 角色 / 武器都用**代码 + 图元**建（`src/lowpoly/`）：14 个原作低模**三角面逐人全等**，初音 / 黑岩是纯代码角色；有参考图也只**取特征**，体态抄原版模型 |
 | **一份模型代码，四个工具共用** | 唯一的真源是一份 `spec`（命名部件 + 四种图元），编辑器 / 实验室 / 武器编辑器 / 导入页都读它 |
-| **能被 AI 驱动** | 所有能力都挂在 `window.EditorAPI`（116 个命令），配 27 步状态机 + 8 个质量门 + Agent 租约制 |
+| **能被 AI 驱动** | 所有能力都挂在 `window.EditorAPI` / `window.WeaponAPI`，配 27 步状态机 + 8 个质量门 + Agent 租约制；`systemPrompt()` 一键取最新提示词 |
 
 ### 四种图元
 
 | kind | 是什么 | 用在哪 |
 |---|---|---|
-| `box` | 方块 | 手搓角色的主力 |
-| `panel` | 2D 多边形挤出 | 发片、衣片 |
+| `box` | 方块（圆角盒） | 手搓角色 / 武器的主力 |
+| `panel` | 2D 多边形挤出 | 发片、衣片、刀身 |
 | `op` | **原作几何的引用**（boxify 拆出来的） | 保真编辑原作 |
-| `geo` | 球 / 柱 / 锥 / 胶囊 / 环 / 车削 / 挤出 | 导入平滑网格后 |
+| `geo` | 球 / 柱 / 锥 / 环 / 胶囊 / 车削 / 挤出 | 程序化武器、导入平滑网格 |
 
 ---
 
 ## 截图
 
-| 部件编辑器 | 角色实验室 |
+| 部件编辑器（逐图元编辑 + gizmo） | 角色实验室（高模 + 武器池） |
 |---|---|
-| ![编辑器](images/previews/preview-editor-split.png) | ![实验室](images/previews/preview-hires6.png) |
-| **武器编辑器**（跨角色槽位混搭） | **新增模型**（自己做的角色） |
-| ![武器编辑器](images/previews/preview-mixer.png) | ![新增模型](images/previews/preview-brm-q34.png) |
+| ![部件编辑器](images/previews/preview-editor-split.png) | ![角色实验室](images/previews/preview-hires6.png) |
+| **武器编辑器**（共享武器库 · 拆解 · 视口编辑） | **新增模型**（初音 / 黑岩等运行时角色） |
+| ![武器编辑器](images/previews/preview-weapon.png) | ![新增模型](images/previews/preview-brm-q34.png) |
 
 ---
 
@@ -76,7 +79,7 @@ node tools/_serve.js
 Windows 上双击 **`启动-低模工坊.bat`** 也一样（会顺手开浏览器）。
 
 > **为什么要起服务**：所有页面都是原生 ES module，浏览器不允许从 `file://` 加载；
-> 而且保存模型 / 临时缓存 / Agent 接管记录都走这个服务器的小 REST API。
+> 而且保存模型 / 武器 / 临时缓存 / Agent 接管记录都走这个服务器的小 REST API。
 > 服务端**只用 Node 内置模块**（`http` `fs` `path`），没有任何依赖。
 
 ---
@@ -85,12 +88,35 @@ Windows 上双击 **`启动-低模工坊.bat`** 也一样（会顺手开浏览�
 
 | 工具 | 干什么 |
 |---|---|
-| **部件编辑器**<br>`pages/character-editor.html` | 逐图元编辑（保留圆角/斜切/锯齿）· 分区规则 · 刀切平面 · 体素/GLB 导入 · 暴露 `window.EditorAPI` + 生成流水线 + 质量门 |
-| **角色实验室**<br>`pages/character-lab.html` | 14 个原作低模 + 6 个烘焙高模 + **新增模型独立分区** · 动画 · 调色板 · 截图 / JSON / GLB 导出 |
-| **武器编辑器**<br>`pages/weapon-editor.html` | 按槽位（头/脸·头发·左臂·右臂·左腿·右腿·后摆·兽尾·光环·道具）把不同角色的部件互换 |
+| **部件编辑器**<br>`pages/character-editor.html` | 逐图元编辑（保留圆角 / 斜切 / 锯齿）· **基础 / 拆分源优先走程序化**（`PORTS → CHARACTERS → XT`，`id` 旁有「程序化 / 烘焙」标记）· **新增模型可直接编辑** · 分区规则 · 刀切平面 · 体素 / GLB 导入 · 暴露 `window.EditorAPI` + 生成流水线 + 质量门 |
+| **角色实验室**<br>`pages/character-lab.html` | 14 个**程序化重建**的原作低模 + 烘焙高模 + **新增模型独立分区**（初音 / 黑岩）· 移动状态机 + 活动 · **武器池**（角色自带 / 共享池，互斥）· 调色板 · 截图 / JSON / GLB 导出 |
+| **武器编辑器**<br>`pages/weapon-editor.html` | 武器**独立路线**（无骨架、握把在原点）· **共享武器库**（黑刃 / 黑岩巨炮 / 葱）一键**拆解成可编辑图元** · 视口 **gizmo 拖动 / 旋转 / 缩放 + 增删** · 模型代码视图 · **武器建模流水线** + 同类型动作模板 · 暴露 `window.WeaponAPI` |
 | **模型导入**<br>`pages/model-import.html` | `.vox`(VoxelAI Studio / MagicaVoxel) / `.glb` / `.gltf` / `.obj` → 按连通分量拆成轴对齐盒 → 可编辑方块 |
 
 外加三个信息页：**AI 工作流** / **系统状态** / **文档**（导航条右侧那一组，互相独立、不跳回启动页）。
+
+---
+
+## 程序化角色 / 武器（`src/lowpoly/`）
+
+工坊最好的路线是**直接用代码写角色和武器**。运行时在这里：
+
+| 文件 | 内容 |
+|---|---|
+| `src/lowpoly/model.js` | 骨架常量 + `Builder`（`box` / `shape` / `add` / `torus` / `addCyl`）+ 脸管线（`buildFace`） |
+| `src/lowpoly/weapons.js` | 武器本体（`WEAPONS`）+ 挂载数（单手 / 双手）+ 种类（刀 / 锤 / 枪 / 炮 / 盾 / 杖 / 链 / 箱）+ `KIND_MOVES`（种类→动作模板） |
+| `src/lowpoly/moves.js` | 武器动作（`ATTACKS` / `COMBOS`），纯姿态函数 |
+| `src/lowpoly/rig.js` | 武器池绑定（`mountWeapons`）：两池互斥 / 2 手位 / 角色绑定 / 按序出招 |
+| `src/lowpoly/character.js` | `Character` 抽象类 + `Miku` / `Brs` + `buildCharacter(id)` |
+| `src/lowpoly/orig/*` | **14 个原作低模的程序化移植数据**（`*_DATA`）+ `buildFromPort()` |
+
+**移植怎么做的**：钩 `Q.prototype.box/shape/add`（+ `Object3D.add`）跑一遍原作 `XT(id)`，抓下**作者级图元**与网格名，
+再用我们自己的 `Builder` 重放 → 三角面**逐人全等**、逐骨骼 bbox 基本全对。
+踩过的 9 个坑（只调一次 `XT` / `exact` 只给叶子 / 脸网格排除 / `geoRaw` 要 `toNonIndexed` /
+`Builder` 不能混盒与裸几何 / 网格名回填 …）都写在 [`docs/lowpoly-runtime.md` §8.6](docs/lowpoly-runtime.md)。
+
+**武器拆解**：`WeaponAPI.captureOriginal(id)` 钩 `Builder.box/shape/add` + `BufferGeometry.applyMatrix4`，
+把共享武器还原成 `box / panel / geo`（黑刃 14 / 黑岩巨炮 33 / 葱 4 个图元，包围盒与原武器完全一致）。
 
 ---
 
@@ -101,6 +127,10 @@ Windows 上双击 **`启动-低模工坊.bat`** 也一样（会顺手开浏览�
 ```js
 // Agent 进场先登记（租约制，30 分钟没动静自动释放）
 await EditorAPI.setAgent('claude-code', '按 ai-pipeline 跑「通用体型」的 hair 遍');
+
+// 拿系统提示词（人物 / 武器各一份，永远最新）
+EditorAPI.systemPrompt();          // → { prompt, version, docs }
+WeaponAPI.systemPrompt();
 
 // 每个回合的第一件事
 EditorAPI.pipeline();        // ★ 权威：现在该干哪一步、下一句命令是什么
@@ -121,34 +151,42 @@ await EditorAPI.agentRelease('做完交还');
 - 同一遍最多修正 3 次、总计 6 次 → 到顶 `status='stopped'`（**硬停**，不许自己 reset）
 - **8 个质量门**：轮廓 IoU（224²，分遍 0.60→0.85）· 转盘 · 内外差 · 左右镜像 · 接缝 · 净空 · 头皮覆盖 · 穿插
 - 「没测」≠「通过」：任何门 `unevaluated`，总判定就是 `unevaluated`
+- **★ 人物生成「程序化优先」**：① 优先用代码建完整可动角色 ② **体态抄原版模型**（不取参考图的体态）
+  ③ **特征让 AI 自己上网收集**（不要求用户给图）④ 有图**只参考图上的特征**
+
+一张图看懂主流程 + 7 个分支：[`docs/ai-pipeline-overview.md`](docs/ai-pipeline-overview.md)（[`.mmd`](docs/ai-pipeline-overview.mmd) 同源）。
 
 **AI 也能直接拿模型文件**（纯 HTTP 就够，不需要浏览器）：
 
 ```bash
 curl http://localhost:8765/api/index                  # 这里有什么、从哪拿
 curl http://localhost:8765/api/characters             # 原作角色索引（低模 14 + 高模变体）
+curl http://localhost:8765/api/original-weapons        # 共享武器库
 curl http://localhost:8765/api/models/<id>/bundle     # ★ 一次拿全：spec + model.js + 直链
-curl http://localhost:8765/api/models/<id>/file/model.js
+curl http://localhost:8765/api/weapons/<id>/bundle
 ```
 
-详见 [`docs/model-files.md`](docs/model-files.md)、[`docs/ai-workflow.md`](docs/ai-workflow.md)。
+详见 [`docs/model-files.md`](docs/model-files.md)、[`docs/weapon-files.md`](docs/weapon-files.md)、[`docs/ai-workflow.md`](docs/ai-workflow.md)。
 
 ---
 
 ## 技术要点（几个我觉得有意思的地方）
 
 - **`boxify()` 的精确切分** —— 直接读 `geometry.userData.primitiveVertexCounts`，
-  按图元边界切成独立几何，保留圆角/斜切/锯齿；每个图元的形心当它在部件里的坐标。
-  验收标准是**像素级 diff = 0.000%**。
-- **骨架用「组级 TRS」** —— `rig.groups` 里每个组带完整的位置/旋转/缩放，
-  这样能表达原作小腿那种 `scale: [1, 0.85, 1]`；旧版扁平字段仍然兼容。
-  （`spec.rig` 里两套表示**同时存在**，写的时候必须两边一起写 —— 这个坑踩过，写在文档里了。）
-- **质量门全是纯函数** —— 吃 canvas / 几何，吐 `{verdict, score, detail}`，不碰 DOM 全局。
-  `src/pipeline.js` 也没有 DOM 依赖，可以单独 require。
-- **配色全是 CSS 变量** —— 45 个语义变量 × 深浅两套，页面里**一个 `#hex` 都不许有**
-  （包括 JS 拼的内联样式和 canvas 2D 绘图色）。
-- **零依赖零构建** —— 没有 `package.json`、没有 `node_modules`、没有打包步骤。
-  服务端 450 行、只用 `http`/`fs`/`path`。
+  按图元边界切成独立几何，保留圆角 / 斜切 / 锯齿；验收标准是**像素级 diff = 0.000%**。
+  我们自己的 `Builder.build()` 现在也写这张表 → 程序化角色 / 武器同样能精确拆解。
+- **程序化移植 / 拆解** —— 两处都靠**钩住作者级图元**（不是几何启发式）。
+  ⚠ 拆武器时**只能钩 `BufferGeometry.applyMatrix4`**：three 的 `translate/rotateX/Y/Z/scale` 内部都走它，
+  同时钩会把同一变换记两遍（位移 / 旋转翻倍）。
+- **两套脸管线** —— 原作 14 人用**手绘脸表**（`attachFace`，96×80 逐像素）；
+  运行时角色用**贴图脸**（`buildFace`，睁 / 闭眼 + 严肃变体）。转成可编辑时按来源分别重建。
+- **骨架用「组级 TRS」** —— `rig.groups` 里每个组带完整的位置 / 旋转 / 缩放，旧版扁平字段仍兼容
+  （两套表示同时存在，写的时候要一起写 —— 这个坑踩过）。
+- **质量门全是纯函数** —— 吃 canvas / 几何，吐 `{verdict, score, detail}`，不碰 DOM 全局；
+  `src/pipeline.js` 也没有 DOM 依赖。
+- **配色全是 CSS 变量** —— 语义变量 × 深浅两套，页面里**一个 `#hex` 都不许有**（selfcheck 会查）。
+- **零依赖零构建** —— 没有 `package.json`、没有 `node_modules`、没有打包步骤；
+  服务端只用 `http` / `fs` / `path`。
 
 ---
 
@@ -160,47 +198,52 @@ curl http://localhost:8765/api/models/<id>/file/model.js
 ├─ CHANGELOG.md                ★ 变更记录：每次会话改了什么 / 为什么 / 怎么验证
 ├─ 低模工坊-制作流程笔记.md      ★ 踩坑笔记 + 建模顺序规程（人和 AI 都该先看）
 ├─ 启动-低模工坊.bat             双击起服务 + 开浏览器
-├─ 发布到GitHub.bat
 │
 ├─ pages/                      8 个页面（入口 + 4 工具 + 3 信息页）
 │   ├─ index.html                启动页
-│   ├─ character-editor.html     ★ 部件编辑器 + EditorAPI（116 命令，单文件）
+│   ├─ character-editor.html     ★ 部件编辑器 + EditorAPI（单文件）
 │   ├─ character-lab.html        角色实验室
-│   ├─ weapon-editor.html      武器编辑器
+│   ├─ weapon-editor.html        武器编辑器 + WeaponAPI（单文件）
 │   ├─ model-import.html         模型导入
 │   └─ ai-workflow.html / system.html / docs.html   信息页
 │
 ├─ src/                        共享 JS
+│   ├─ lowpoly/                  ★ 程序化角色运行时（见上）
+│   │   ├─ model.js / weapons.js / moves.js / rig.js / character.js / export.js
+│   │   └─ orig/                 14 个原作低模的移植数据 + port.js
+│   ├─ characters.lowpoly.js     运行时入口（barrel）
 │   ├─ characters.orig.js        原作低模生成器 XT(id)          ← 提取自游戏
 │   ├─ characters.face.js        原作头脸贴图管线               ← 提取自游戏
 │   ├─ characters.hires2.js      原作烘焙高模 $O(id,variant)    ← 提取自游戏
 │   ├─ characters.store.js       浏览器侧：保存 / 缓存 / Agent 租约 / 显卡
-│   ├─ pipeline.js               27 步流水线状态机 + 质量契约
+│   ├─ pipeline.js              27 步流水线状态机 + 质量契约
 │   ├─ quality-gates.js          8 个质量门（纯函数）
 │   ├─ vox-import.js             .vox / .glb / .obj → 方块
 │   ├─ model-readout.js          ★ AI 读数通道：dump / ascii / refProfile
 │   ├─ shell.js                  统一导航条 + 主题（深浅两套）
 │   └─ docs-viewer.js            自写 Markdown 渲染（无 CDN）
 │
-├─ styles/                     shell.css（45 个语义变量 × 深浅两套） / model-import.css
+├─ styles/                     shell.css（语义变量 × 深浅两套）
 ├─ tools/                      _serve.js（本地服务器 + REST API） / selfcheck.js（自检）
 │
-├─ docs/                       9 篇文档（原始 Markdown，人和 AI 共用）
+├─ docs/                       ★ 12 篇文档 + 1 张流水线图源（原始 Markdown，人和 AI 共用）
 ├─ data/                       原作实测数据 + 角色索引
 ├─ models/                     烘焙高模数据                  ← 提取自游戏
 ├─ images/                     预览图 / AI 卡片图 / 参考图
-├─ refs/                       外部参考素材（img2threejs 工作目录）
+├─ refs/                       外部参考素材
 ├─ skills/                     第三方技能（未改动）
+├─ OriginalWeaponList/         ★ 共享武器库（= 共享池本体；几何以代码为准）
 ├─ NewlyAddedModelList/        ★ 你做的模型（正式）
 ├─ NewlyAddedModelTemporaryList/  待确认的
+├─ NewlyAddedWeaponList/       ★ 你做的武器（正式）
+├─ NewlyAddedWeaponTemporaryList/ 待确认的
 └─ TemporaryCache/
     ├─ refs/                   ★ 参照图（服务端资产，清缓存即清）
     └─ …                       AI 测试产物 + agent.json
 ```
 
 > **归类约定（2026-09）**：`.html` 一律进 `pages/`，共享 `.js` 进 `src/`，`.css` 进 `styles/`，
-> 工具脚本进 `tools/`。**旧路径（`/character-editor.html` 等）由 `_serve.js` 302 跳到新位置**，
-> 书签和外部链接不会断。
+> 工具脚本进 `tools/`。**旧路径由 `_serve.js` 302 跳到新位置**，书签和外部链接不会断。
 >
 > **两条命令**（都支持在任意目录下执行）：
 > ```bash
@@ -217,12 +260,15 @@ curl http://localhost:8765/api/models/<id>/file/model.js
 
 | 文档 | 给谁 | 内容 |
 |---|---|---|
-| [`README.md`](docs/README.md) | 人 + AI | 索引、按症状查、文件地图、五条铁律 |
+| [`README.md`](docs/README.md) | 人 + AI | 索引、按症状查、文件地图 |
+| [`ai-pipeline.md`](docs/ai-pipeline.md) | AI | 27 步流水线、8 个门的阈值、反模式、**§〇·B 建模顺序规程**、§十一 程序化角色 |
+| [`ai-pipeline-overview.md`](docs/ai-pipeline-overview.md) | 人 + AI | ★ **一张图看懂主流程 + 7 个分支**（`.mmd` 同源）+ 分支速查表 |
 | [`ai-workflow.md`](docs/ai-workflow.md) | AI + 用户 | 怎么接管、接口边界、租约制、交还规矩 |
-| [`ai-pipeline.md`](docs/ai-pipeline.md) | AI | 27 步流水线、8 个门的阈值、反模式 |
 | [`model-files.md`](docs/model-files.md) | AI | ★ 怎么直接拿到模型文件 |
-| [`editor-api.md`](docs/editor-api.md) | 人 + AI | 116 个命令速查、规格结构、四种图元 |
-| [`storage.md`](docs/storage.md) | 人 + AI | 三个目录的分工、REST API、数据格式 |
+| [`weapon-files.md`](docs/weapon-files.md) | AI + 人 | ★ 武器文件 / 三个目录 / **武器建模流水线** / `WeaponAPI` |
+| [`lowpoly-runtime.md`](docs/lowpoly-runtime.md) | AI + 人 | ★ **程序化角色运行时** + 14 人移植方法（含 §8.6 的 9 个坑）/ 武器池 / 生成策略 |
+| [`editor-api.md`](docs/editor-api.md) | 人 + AI | 命令速查、规格结构、四种图元 |
+| [`storage.md`](docs/storage.md) | 人 + AI | 目录分工、REST API、数据格式 |
 | [`gpu.md`](docs/gpu.md) | 用户 | 显卡检测、**没有显卡怎么办** |
 | [`troubleshooting.md`](docs/troubleshooting.md) | 人 + AI | 按症状排查（含踩过的坑） |
 | [`development.md`](docs/development.md) | 改代码的人 | ★ 架构分层、模块参考、**关键不变量** |
@@ -234,18 +280,9 @@ node tools/_serve.js        # 一个窗口
 node tools/selfcheck.js     # 另一个窗口
 ```
 
-查引用完整性、页面外壳、**文档 vs 116 个命令双向核对**、主题卫生（有没有写死颜色）、服务端端点冒烟。
+查引用完整性、页面外壳、**文档 vs 命令双向核对**、主题卫生（有没有写死颜色）、服务端端点冒烟。
 
 ### 发布到 GitHub
-
-仓库根目录有个 **`发布到GitHub.bat`**，双击就能把当前状态提交并推上去：
-
-```
-自动检查 git / gh 是否安装 → 没初始化就 init → 有改动就提交
-→ 没登录就弹浏览器授权 → 没远程就建仓库 + 推送
-```
-
-不想用脚本的话，普通流程就是：
 
 ```bash
 git add -A
@@ -253,16 +290,26 @@ git commit -m "改了什么"
 git push
 ```
 
+> 如果 `git push` 报 `Connection was reset` / `Failed to connect`：多半是**系统代理没被 git 读到**
+> （git 的 libcurl 不读 Windows 的 WinINET 代理）。查系统代理后给本仓库配上即可：
+> ```bash
+> git config --local http.proxy  http://127.0.0.1:<端口>
+> git config --local https.proxy http://127.0.0.1:<端口>
+> ```
+
 ---
 
 ## 已知限制
 
 - **需要一个有显卡的本机浏览器。** 虚拟机 / 远程桌面 / 无头环境里通常是软件渲染（SwiftShader），
   能跑但很慢，导出 GLB 容易崩。见 [`docs/gpu.md`](docs/gpu.md)。
-- **原作低模没有网格文件** —— 它是 `XT(id)` 现场算出来的。`boxify()` 之后才能拿到可编辑的图元。
+- **程序化移植数据偏大** —— 用了「精确几何」的几位 6KB ~ 710KB/人。
+  可选的「忠实树」压缩模式（`port.js` 模式 A）已支持但**本轮未启用**。
+- **武器拆解对认不出的几何会略过** —— 目前能还原 `Box/Cylinder/Sphere/Cone/Torus/Ring` 六种；
+  其它自定义几何不会被收进图元（不影响只读预览）。
 - **`variantSpec()` 只能用在 box/geo 图元的规格上**（比如「通用体型」预设）。
-  对 `boxify()` 出来的 `op` 图元算不出躯干顶/脚底，只会挪骨架、不缩放几何（会返回一条 `warn`）。
-- **低模和高模混搭比例会不一致**（两套骨架），武器编辑器里会提示。
+  对 `boxify()` 出来的 `op` 图元算不出躯干顶 / 脚底，只会挪骨架、不缩放几何（会返回一条 `warn`）。
+- **低模和高模混搭比例会不一致**（两套骨架），编辑器里会提示。
 - **bundle 提取靠人工对读**，`characters.*.js` 里的名字是压缩后的（`XT` / `Q` / `KT` …），
   没做 demangle，读起来确实痛苦。
 
@@ -271,10 +318,10 @@ git push
 ## 致谢
 
 - 原作 **《企鹅物流·未登记访客》** 及其开发
-- 本服务全程由opencode开发，所有代码逻辑全部为al编写，本人只提供参考考据，服务流程，方法论
+- 本服务全程由 [opencode](https://opencode.ai) 开发，所有代码逻辑全部为 **AI** 编写，
+  作者只提供参考考据、服务流程与方法论
 - **three.js** —— 整套工具跑在它上面（通过 importmap，无打包）
 - **img2threejs** 技能 —— 本项目沿用了它的「先度量、后建模、质量门卡关」的方法论
-  （以及 `object-sculpt-spec.json` 的导入支持）
 
 ---
 
