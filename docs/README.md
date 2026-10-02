@@ -24,6 +24,8 @@
 | 「新增模型在实验室里看不到」 | [`storage.md`](storage.md) §2 + [`troubleshooting.md`](troubleshooting.md) §6 |
 | 「**武器**存哪 / 怎么拿 / 怎么绑动作」 | [`weapon-files.md`](weapon-files.md) ★ |
 | 「自己写的 / 外部的角色怎么接进工坊（状态机 + 武器池）」 | [`lowpoly-runtime.md`](lowpoly-runtime.md) ★ |
+| 「让 AI **自己**建一个角色（不用给图）/ 怎么拿最新系统提示词」 | [`ai-pipeline.md`](ai-pipeline.md) §十一 + [`lowpoly-runtime.md`](lowpoly-runtime.md) §0；运行时 `EditorAPI.systemPrompt()` |
+| 「武器怎么建 / 怎么把共享武器拆开改」 | [`weapon-files.md`](weapon-files.md) §6 武器建模流水线 ★ |
 | 「想拿原作 14 个角色的比例数据」 | [`../data/reference-models.json`](../data/reference-models.json) 或 `GET /api/characters` |
 | 「**AI 怎么直接拿到模型文件**」 | [`model-files.md`](model-files.md) ★ |
 | 「刘海/头发/变体为什么这么写」 | [`editor-api.md`](editor-api.md) 预设小节（三条写部件的坑） |
@@ -41,7 +43,7 @@
 | [`../低模工坊-制作流程笔记.md`](../低模工坊-制作流程笔记.md) | **AI Agent + 用户** | ★ **踩坑笔记**：怎么「看」模型（render 特写 + `ModelReadout` 文本读数 + 服务端参照图）、**建模顺序规程**、靴翼几何写法、`geo`/`setRig` 等一堆坑 |
 | [`model-files.md`](model-files.md) | **AI Agent** | ★ **怎么直接拿到模型文件**：三种模型的三种拿法、`/bundle`、`/file/:name`、没保存的状态、拿不到的东西 |
 | [`weapon-files.md`](weapon-files.md) | **AI Agent + 用户** | ★ **武器文件**：独立路线、`NewlyAddedWeaponList/` 的形状、`/api/weapons`、`WeaponAPI`、挂载数 / 种类 / 动作绑定 |
-| [`editor-api.md`](editor-api.md) | 人 + AI | **109 个命令**的速查、规格结构、四种图元、预设与写部件的坑 |
+| [`editor-api.md`](editor-api.md) | 人 + AI | **108 条命令**的速查、规格结构、四种图元、预设与写部件的坑 |
 | [`lowpoly-runtime.md`](lowpoly-runtime.md) | **AI Agent + 改代码的人** | ★ **自定义运行时**：程序化角色（初音未来 / 黑岩射手）、状态机动画、武器池（两池互斥 / 角色绑定 / 单手·双手）、导出 spec |
 | [`storage.md`](storage.md) | 人 + AI | 三个目录的分工、保存/确认/缓存的 REST API、数据格式 |
 | [`gpu.md`](gpu.md) | 用户 | 显卡检测、**没有显卡怎么办**、软件渲染的降级建议 |
@@ -60,7 +62,7 @@
 ├─ pages/docs.html                   文档页（按症状查 + 全部文档 + 文件地图）
 ├─ pages/character-editor.html       部件编辑器（window.EditorAPI，生成流水线，保存/缓存）
 ├─ pages/character-lab.html          角色实验室（原始模型 14 低模 + 6 高模 · 新增模型（初音 / 黑岩）· 运行时）
-├─ pages/weapon-editor.html          武器编辑器（独立路线：本体 + 挂载数/种类 + 动作绑定）
+├─ pages/weapon-editor.html          武器编辑器（独立路线：共享武器库一键拆解 + 视口 gizmo 编辑 / 增删 + 模型代码 + 武器建模流水线 · window.WeaponAPI）
 ├─ pages/model-import.html           模型导入（.vox/.glb/.gltf/.obj → 可编辑方块）
 │
 ├─ 代码
@@ -70,6 +72,7 @@
 │   ├─ src/lowpoly/              ★程序化角色运行时（拆成模块）：
 │   │      model.js 人物模型 · weapons.js 武器本体 · moves.js 武器动作 · rig.js 武器池绑定
 │   │      actions.js 动作绑定（移动/活动）· character.js 抽象类 · export.js 导出 · index.js 出口
+│   │      orig/ 14 个原作低模的移植数据（*_DATA）+ port.js（buildFromPort）
 │   ├─ src/characters.face.js     原作头脸管线：jT 贴图 / MT / attachFace
 │   ├─ src/characters.hires2.js   原作高模：$O(id,variant) / ek 骨架
 │   ├─ src/characters.store.js    ★浏览器侧：模型保存 / 缓存 / Agent 租约 / 显卡检测
@@ -124,7 +127,7 @@
 
 ---
 
-## 四、五条铁律（人和 AI 都要遵守）
+## 四、六条铁律（人和 AI 都要遵守）
 
 1. **必须先跑服务器**：`启动-低模工坊.bat` 或 `node tools/_serve.js`。
    所有页面都是 ES module，`file://` 打不开；保存/缓存/Agent 记录也全靠这个服务器。
@@ -146,3 +149,7 @@
    写死一个 `#1f3846`，浅色模式下那里就会是一块抹不掉的深色。
    包括 **JS 里拼的内联样式**（`el.style.cssText='background:#16252e'`）—— 那是主题的唯一漏洞来源。
    自查见 [`development.md`](development.md) §9.5。
+
+6. **人物生成「程序化优先」**：① 优先用**代码 + 图元**建完整可动角色（`src/lowpoly/`）；
+   ② **体态抄原版模型**（不取参考图的头身比 / 四肢 / 站姿 / 透视）；③ **特征让 AI 自己上网收集**（不要求用户给图）；
+   ④ 有参考图**只参考图上的特征**，别做逐像素对剪影。详见 [`ai-pipeline.md`](ai-pipeline.md) §十一。
