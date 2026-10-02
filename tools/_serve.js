@@ -43,7 +43,31 @@ const DIR = {
   cache:     path.join(root, 'TemporaryCache'),
   refs:      path.join(root, 'TemporaryCache', 'refs'),   // ★ 参照图：放在缓存里 → 清缓存即清
 };
-for(const d of Object.values(DIR)) fs.mkdirSync(d, { recursive: true });
+/* ★ 武器走**独立**的一套目录 + 文件名（weapon.json / weapon.js），不跟人物混 */
+const DIR_W = {
+  confirmed: path.join(root, 'NewlyAddedWeaponList'),
+  temporary: path.join(root, 'NewlyAddedWeaponTemporaryList'),
+};
+/* ★ 共享武器库（共享池的本体）：只有「正式」一层 */
+const DIR_O = {
+  confirmed: path.join(root, 'OriginalWeaponList'),
+  temporary: path.join(root, 'OriginalWeaponList'),
+};
+for(const d of [...Object.values(DIR), ...Object.values(DIR_W), DIR_O.confirmed]) fs.mkdirSync(d, { recursive: true });
+
+/* ★ 「模型」和「武器」两套目录/文件名，共用同一批读写函数 —— 用 kind 区分 */
+const KINDS = {
+  model:  { json:'model.json',  js:'model.js',  dirs:DIR,   category:'新增模型',
+            schema:'lowpoly-workshop/model@1',
+            dirName:{ confirmed:'NewlyAddedModelList',  temporary:'NewlyAddedModelTemporaryList' } },
+  weapon: { json:'weapon.json', js:'weapon.js', dirs:DIR_W, category:'新增武器',
+            schema:'lowpoly-workshop/weapon@1',
+            dirName:{ confirmed:'NewlyAddedWeaponList', temporary:'NewlyAddedWeaponTemporaryList' } },
+  /* 共享武器库 = 共享池本体（黑刃 / 黑岩巨炮 / 葱 …），正式区 */
+  original:{ json:'weapon.json', js:'weapon.js', dirs:DIR_O, category:'原版武器',
+            schema:'lowpoly-workshop/weapon@1',
+            dirName:{ confirmed:'OriginalWeaponList', temporary:'OriginalWeaponList' } },
+};
 
 const MIME = { '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8',
   '.mjs':'text/javascript; charset=utf-8', '.css':'text/css; charset=utf-8',
@@ -75,33 +99,40 @@ function dirSize(p){
   try{ for(const f of fs.readdirSync(p)){ const s = fs.statSync(path.join(p, f)); if(s.isFile()){ bytes += s.size; files++; } } }catch(e){}
   return { bytes, files };
 }
-function modelMeta(base, id){
-  const f = path.join(base, id, 'model.json');
+function modelMeta(base, id, k = 'model'){
+  const K = KINDS[k];
+  const f = path.join(base, id, K.json);
   if(!fs.existsSync(f)) return null;
   try{
     const j = JSON.parse(fs.readFileSync(f, 'utf8'));
     const st = fs.statSync(f);
-    const hasJs = fs.existsSync(path.join(base, id, 'model.js'));
+    const hasJs = fs.existsSync(path.join(base, id, K.js));
     const hasThumb = fs.existsSync(path.join(base, id, 'thumb.png'));
     const folder = path.basename(base);
-    return { id: j.id || id, name: j.name || id, category: j.category || '新增模型',
+    return { id: j.id || id, name: j.name || id, category: j.category || K.category,
       source: j.source || null, note: j.note || '',
       thumb: hasThumb ? ('/' + folder + '/' + id + '/thumb.png') : null,   // ★ 只给 URL，不回传 dataURL
       createdAt: j.createdAt || st.mtimeMs, updatedAt: st.mtimeMs,
       parts: j.stats ? j.stats.parts : null, triangles: j.stats ? j.stats.triangles : null,
+      // 武器专有：挂载数 / 种类 / 绑定了几个动作
+      mount: j.mount != null ? j.mount : null, kind: j.kind || null,
+      moves: Array.isArray(j.moves) ? j.moves : null,
+      runtime: !!j.runtime,
+      runtimeId: j.runtime || null,               // ★ 真正的运行时武器 id（黑刃/黑岩巨炮/葱）；列表里也带上，别只给布尔
       hasJs, dir: folder };
   }catch(e){ return null; }
 }
-function listModels(base){
+function listModels(base, k = 'model'){
   if(!fs.existsSync(base)) return [];
   return fs.readdirSync(base).filter(d => { try{ return fs.statSync(path.join(base, d)).isDirectory(); }catch(e){ return false; } })
-    .map(id => modelMeta(base, id)).filter(Boolean).sort((a, b) => b.updatedAt - a.updatedAt);
+    .map(id => modelMeta(base, id, k)).filter(Boolean).sort((a, b) => b.updatedAt - a.updatedAt);
 }
 function rmrf(p){ if(fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true }); }
-function findModel(id){
-  for(const k of ['temporary', 'confirmed']){
-    const p = path.join(DIR[k], id);
-    if(fs.existsSync(path.join(p, 'model.json'))) return { key:k, dir:p };
+function findModel(id, k = 'model'){
+  const dirs = KINDS[k].dirs;
+  for(const key of ['temporary', 'confirmed']){
+    const p = path.join(dirs[key], id);
+    if(fs.existsSync(path.join(p, KINDS[k].json))) return { key, dir:p };
   }
   return null;
 }
@@ -115,34 +146,36 @@ function fileInfo(dir, name, urlBase){
     return { name, bytes:st.size, mtime:st.mtimeMs, url:urlBase + '/' + name };
   }catch(e){ return null; }
 }
-/** 一个模型目录里的全部文件 + 三个约定文件的直链 */
-const DIRNAME = { confirmed:'NewlyAddedModelList', temporary:'NewlyAddedModelTemporaryList' };
-function listModelFiles(f, id){
+/** 一个模型/武器目录里的全部文件 + 三个约定文件的直链 */
+function listModelFiles(f, id, k = 'model'){
+  const K = KINDS[k];
   // ★ 静态 URL 必须用**真实目录名**（NewlyAddedModelList / …TemporaryList），
   //   不能用内部键名（confirmed / temporary）—— 后者不是磁盘上的路径，会 404。
-  //   f.dir 是 .../<目录名>/<id>，所以真实目录名在上一层。
-  const urlBase = '/' + (DIRNAME[f.key] || path.basename(path.dirname(f.dir))) + '/' + id;
+  const urlBase = '/' + (K.dirName[f.key] || path.basename(path.dirname(f.dir))) + '/' + id;
   const files = fs.readdirSync(f.dir).map(n => fileInfo(f.dir, n, urlBase)).filter(Boolean)
     .sort((a, b) => a.name.localeCompare(b.name));
   const has = n => files.some(x => x.name === n);
   return { dir:f.dir, where:f.key, urlBase, files,
-    urls: { model: has('model.json') ? urlBase + '/model.json' : null,
-            js:    has('model.js')    ? urlBase + '/model.js'    : null,
-            thumb: has('thumb.png')   ? urlBase + '/thumb.png'   : null } };
+    urls: { model: has(K.json)    ? urlBase + '/' + K.json    : null,
+            js:    has(K.js)      ? urlBase + '/' + K.js      : null,
+            thumb: has('thumb.png') ? urlBase + '/thumb.png'  : null } };
 }
-/** ★ 给 AI 的「模型文件」标准形状。
- *  磁盘上的模型和编辑器**没保存的当前状态**都用这个形状 —— 调用方不用区分。 */
-function modelBundle(f, id){
-  const rec = readJsonFile(path.join(f.dir, 'model.json'), {});
-  const lf = listModelFiles(f, id);
-  const jsPath = path.join(f.dir, 'model.js');
+/** ★ 给 AI 的「模型 / 武器文件」标准形状。
+ *  磁盘上的和编辑器**没保存的当前状态**都用这个形状 —— 调用方不用区分。 */
+function modelBundle(f, id, k = 'model'){
+  const K = KINDS[k];
+  const rec = readJsonFile(path.join(f.dir, K.json), {});
+  const lf = listModelFiles(f, id, k);
+  const jsPath = path.join(f.dir, K.js);
   const meta = { ...rec }; delete meta.spec;        // 元数据（不含 spec，避免重复）
-  return { ok:true, id, where:f.key, path:f.dir,
-    schema: rec.schema || 'lowpoly-workshop/model@1',
+  return { ok:true, id, kind:k, where:f.key, path:f.dir,
+    schema: rec.schema || K.schema,
     meta, spec: rec.spec || null, stats: rec.stats || null,
     js: fs.existsSync(jsPath) ? fs.readFileSync(jsPath, 'utf8') : null,
     files: lf.files, urls: lf.urls,
-    howto: 'spec 是编辑器规格（可直接喂给 EditorAPI.setSpec/upsertPart）；js 是工厂函数（实验室靠它构建）。' };
+    howto: k === 'weapon'
+      ? 'spec 是武器本体图元；mount 单手/双手，kind 种类，moves 绑定的动作；武器是独立路线，不挂骨架。'
+      : 'spec 是编辑器规格（可直接喂给 EditorAPI.setSpec/upsertPart）；js 是工厂函数（实验室靠它构建）。' };
 }
 /** 原作角色索引：低模 14 人 + 高模烘焙变体。
  *  优先读 data/characters.json（浏览器用 EditorAPI.exportCharacterIndex() 生成，最权威）；
@@ -164,17 +197,26 @@ function characterIndex(){
   for(const h of high) h.files = h.variants.map(v => '/models/' + h.id + '-' + v + '.json');
   return { low, high, source:'data/reference-models.json + models/ 目录扫描' };
 }
-function writeModel(base, id, payload){
+function writeModel(base, id, payload, k = 'model'){
+  const K = KINDS[k];
   const d = path.join(base, id); fs.mkdirSync(d, { recursive: true });
   const now = Date.now();
   let createdAt = now;
-  const prev = path.join(d, 'model.json');
+  const prev = path.join(d, K.json);
   if(fs.existsSync(prev)){ try{ createdAt = JSON.parse(fs.readFileSync(prev, 'utf8')).createdAt || now; }catch(e){} }
-  const rec = { schema:'lowpoly-workshop/model@1', id, name:payload.name || id,
-    category:payload.category || '新增模型', source:payload.source || null, note:payload.note || '',
+  const rec = { schema:K.schema, id, name:payload.name || id,
+    category:payload.category || K.category, source:payload.source || null, note:payload.note || '',
     createdAt, updatedAt:now, stats:payload.stats || null, spec:payload.spec || null };
+  if(k === 'weapon' || k === 'original'){             // ★ 武器专有字段（新增武器 + 共享武器库）
+    rec.mount = payload.mount != null ? payload.mount : 1;      // 1 单手 / 2 双手
+    rec.kind  = payload.kind || null;                            // blade/hammer/gun/cannon/shield/…
+    rec.moves = Array.isArray(payload.moves) ? payload.moves : [];  // 绑定的动作（ATTACKS 的 key）
+    rec.grip  = payload.grip || [0, 0, 0];
+    rec.hold  = payload.hold || null;
+    rec.runtime = payload.runtime || null;               // 若指向运行时武器（可选）
+  }
   fs.writeFileSync(prev, JSON.stringify(rec, null, 2), 'utf8');
-  if(payload.js) fs.writeFileSync(path.join(d, 'model.js'), String(payload.js), 'utf8');
+  if(payload.js) fs.writeFileSync(path.join(d, K.js), String(payload.js), 'utf8');
   // ★ 缩略图**落盘**，不要把 dataURL 写进 model.json（会让文件爆炸、接口回传几 MB）
   if(payload.thumb && /^data:image\/png;base64,/.test(payload.thumb)){
     fs.writeFileSync(path.join(d, 'thumb.png'), Buffer.from(payload.thumb.split('base64,')[1], 'base64'));
@@ -493,34 +535,40 @@ const server = http.createServer(async (req, res) => {
           agent: agentView() });
       }
 
-      if(seg[0] === 'models'){
+      /* ★ /api/models · /api/weapons · /api/original-weapons 共用同一套读写逻辑 */
+      if(seg[0] === 'models' || seg[0] === 'weapons' || seg[0] === 'original-weapons'){
+        const k = seg[0] === 'original-weapons' ? 'original' : (seg[0] === 'weapons' ? 'weapon' : 'model');
+        const D = KINDS[k].dirs;
+        const J = KINDS[k].json;
+        const what = k === 'weapon' ? '武器' : (k === 'original' ? '原版武器' : '模型');
+
         if(req.method === 'GET' && seg.length === 1)
-          return ok(res, { ok:true, confirmed: listModels(DIR.confirmed), temporary: listModels(DIR.temporary) });
+          return ok(res, { ok:true, kind:k, confirmed: listModels(D.confirmed, k), temporary: listModels(D.temporary, k) });
 
         if(req.method === 'GET' && seg.length === 2){
-          const f = findModel(safeId(seg[1])); if(!f) return die(res, '没有这个模型: ' + seg[1]);
-          const rec = JSON.parse(fs.readFileSync(path.join(f.dir, 'model.json'), 'utf8'));
-          const jsf = path.join(f.dir, 'model.js');
+          const f = findModel(safeId(seg[1]), k); if(!f) return die(res, '没有这个'+what+': ' + seg[1]);
+          const rec = JSON.parse(fs.readFileSync(path.join(f.dir, J), 'utf8'));
+          const jsf = path.join(f.dir, KINDS[k].js);
           return ok(res, { ok:true, ...rec, js: fs.existsSync(jsf) ? fs.readFileSync(jsf, 'utf8') : null,
             where: f.key, path: f.dir });
         }
 
         if(req.method === 'GET' && seg.length === 3 && (seg[2] === 'bundle' || seg[2] === 'files')){
-          const id = safeId(seg[1]); const f = findModel(id);
-          if(!f) return die(res, '没有这个模型: ' + id);
-          if(seg[2] === 'files'){ const lf = listModelFiles(f, id); return ok(res, { ok:true, id, ...lf }); }
-          return ok(res, modelBundle(f, id));
+          const id = safeId(seg[1]); const f = findModel(id, k);
+          if(!f) return die(res, '没有这个'+what+': ' + id);
+          if(seg[2] === 'files'){ const lf = listModelFiles(f, id, k); return ok(res, { ok:true, id, kind:k, ...lf }); }
+          return ok(res, modelBundle(f, id, k));
         }
 
-        /* ★ 取模型目录里的原始文件（model.json / model.js / thumb.png / 任何落盘的东西）
+        /* ★ 取目录里的原始文件（model.json / model.js / thumb.png / 任何落盘的东西）
          *   ?download=1 会带上 Content-Disposition，方便 AI 直接存成文件 */
         if(req.method === 'GET' && seg.length === 4 && seg[2] === 'file'){
-          const id = safeId(seg[1]); const f = findModel(id);
-          if(!f) return die(res, '没有这个模型: ' + id);
+          const id = safeId(seg[1]); const f = findModel(id, k);
+          if(!f) return die(res, '没有这个'+what+': ' + id);
           const name = safeId(seg[3]);                       // safeId 会去掉 / 和 \，天然防穿越
           const fp = path.join(f.dir, name);
           if(!fp.startsWith(f.dir) || !fs.existsSync(fp) || !fs.statSync(fp).isFile())
-            return die(res, '模型目录里没有这个文件: ' + name);
+            return die(res, what+'目录里没有这个文件: ' + name);
           const buf = fs.readFileSync(fp);
           const hd = { 'Content-Type': MIME[path.extname(name).toLowerCase()] || 'application/octet-stream',
             'Access-Control-Allow-Origin':'*', 'Cache-Control':'no-cache', 'Content-Length':buf.length };
@@ -532,28 +580,29 @@ const server = http.createServer(async (req, res) => {
         if(req.method === 'POST' && seg.length === 1){
           const id = safeId(body.id || body.name);
           if(!id) return bad(res, '需要 id 或 name');
-          const to = body.dir === 'confirmed' ? DIR.confirmed : DIR.temporary;
-          const rec = writeModel(to, id, body);
-          if(body.dir === 'confirmed') rmrf(path.join(DIR.temporary, id));
-          return ok(res, { ok:true, id, where: body.dir === 'confirmed' ? 'confirmed' : 'temporary', model: modelMeta(to, id) });
+          const to = body.dir === 'confirmed' ? D.confirmed : D.temporary;
+          writeModel(to, id, body, k);
+          // ★ 正式区写完后清掉临时区的同名副本 —— 但原版武器库两个键指向同一个目录，别把自己删了
+          if(body.dir === 'confirmed' && D.temporary !== D.confirmed) rmrf(path.join(D.temporary, id));
+          return ok(res, { ok:true, kind:k, id, where: body.dir === 'confirmed' ? 'confirmed' : 'temporary', model: modelMeta(to, id, k) });
         }
 
         if(req.method === 'POST' && seg.length === 3 && (seg[2] === 'confirm' || seg[2] === 'unconfirm')){
           const id = safeId(seg[1]);
-          const from = seg[2] === 'confirm' ? DIR.temporary : DIR.confirmed;
-          const to   = seg[2] === 'confirm' ? DIR.confirmed : DIR.temporary;
-          if(!fs.existsSync(path.join(from, id, 'model.json'))) return die(res, '不在' + (seg[2] === 'confirm' ? '临时' : '正式') + '目录里: ' + id);
+          const from = seg[2] === 'confirm' ? D.temporary : D.confirmed;
+          const to   = seg[2] === 'confirm' ? D.confirmed : D.temporary;
+          if(!fs.existsSync(path.join(from, id, J))) return die(res, '不在' + (seg[2] === 'confirm' ? '临时' : '正式') + '目录里: ' + id);
           rmrf(path.join(to, id));
           fs.mkdirSync(path.dirname(path.join(to, id)), { recursive: true });
           fs.renameSync(path.join(from, id), path.join(to, id));
-          return ok(res, { ok:true, id, where: seg[2] === 'confirm' ? 'confirmed' : 'temporary', model: modelMeta(to, id) });
+          return ok(res, { ok:true, kind:k, id, where: seg[2] === 'confirm' ? 'confirmed' : 'temporary', model: modelMeta(to, id, k) });
         }
 
         if(req.method === 'DELETE' && seg.length === 2){
-          const id = safeId(seg[1]); const f = findModel(id);
-          if(!f) return die(res, '没有这个模型: ' + id);
+          const id = safeId(seg[1]); const f = findModel(id, k);
+          if(!f) return die(res, '没有这个'+what+': ' + id);
           rmrf(f.dir);
-          return ok(res, { ok:true, id, removedFrom:f.key });
+          return ok(res, { ok:true, kind:k, id, removedFrom:f.key });
         }
       }
 
@@ -750,7 +799,7 @@ const server = http.createServer(async (req, res) => {
    *   旧的根路径（/character-editor.html 等）用 LEGACY 表 302 过去，书签和外部链接不会断。 */
   const LEGACY = {
     '/index.html':'/pages/index.html', '/character-editor.html':'/pages/character-editor.html',
-    '/character-lab.html':'/pages/character-lab.html', '/character-mixer.html':'/pages/character-mixer.html',
+    '/character-lab.html':'/pages/character-lab.html', '/weapon-editor.html':'/pages/weapon-editor.html',
     '/model-import.html':'/pages/model-import.html', '/ai-workflow.html':'/pages/ai-workflow.html',
     '/system.html':'/pages/system.html', '/docs.html':'/pages/docs.html',
     '/shell.css':'/styles/shell.css', '/model-import.css':'/styles/model-import.css',

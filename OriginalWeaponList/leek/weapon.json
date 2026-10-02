@@ -1,0 +1,31 @@
+{
+  "schema": "lowpoly-workshop/weapon@1",
+  "id": "leek",
+  "name": "葱",
+  "category": "原版武器",
+  "source": null,
+  "note": "初音未来 · 锤类",
+  "createdAt": 1790947928880,
+  "updatedAt": 1790947928880,
+  "stats": null,
+  "spec": null,
+  "mount": 1,
+  "kind": "hammer",
+  "moves": [
+    "hammer"
+  ],
+  "grip": [
+    0,
+    -0.48,
+    0.04
+  ],
+  "hold": {
+    "rot": [
+      0.1,
+      0,
+      0.06
+    ],
+    "scale": 1
+  },
+  "runtime": "leek"
+}

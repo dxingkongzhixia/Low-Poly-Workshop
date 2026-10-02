@@ -13,7 +13,7 @@ pages/system.html                系统状态页（显卡 / Agent 租约 / 缓�
 pages/docs.html                  文档页（按症状查 + 全部文档 + 文件地图）
   ├─ pages/character-editor.html   部件编辑器（本手册主角，含 window.EditorAPI）
   ├─ pages/character-lab.html      角色实验室（14 低模 + 6 高模 + ★新增模型独立分区）
-  ├─ pages/character-mixer.html    换装室（槽位混搭跨角色部件）
+  ├─ pages/weapon-editor.html    武器编辑器（槽位混搭跨角色部件）
   └─ pages/model-import.html       模型导入（.vox/.glb/.gltf/.obj → 可编辑方块，含 window.ImportAPI）
 
 服务端（必须先跑）
@@ -113,6 +113,7 @@ const js  = EditorAPI.exportJS()        // js.code —— 依赖 src/characters.
 
 ```js
 EditorAPI.help()          // 全部命令说明（纯文本）
+EditorAPI.systemPrompt()  // 「给大模型的系统提示词」最新版（同 docs/ai-pipeline.md §八）
 EditorAPI.schema()        // 规格结构 / 分类 / 父级 / 调色板键 / 预算 / 角色表 / workflows / boxifyOptions
 EditorAPI.state()         // 当前状态：stats、bbox、primitiveKinds、opSources、skippedHiddenMeshes、rigFormat、parts
 EditorAPI.reference('lappland')   // ★ 原作低模的测量数据（做新角色的参照）
@@ -123,8 +124,8 @@ EditorAPI.sourceMeshes('lappland')// ★ 可拆分网格清单（索引/角色/�
 
 | 分类 | 命令 |
 |---|---|
-| 自省 | `help()` `schema()` `state()` `reference(source?)` `sourceMeshes(source?)` |
-| 规格 | `getSpec()` `setSpec(spec)` `loadPreset(name)` `loadBase(source)` `boxify(source,opts?)` |
+| 自省 | `help()` `systemPrompt()` `schema()` `state()` `reference(source?)` `sourceMeshes(source?)` |
+| 规格 | `getSpec()` `setSpec(spec)` `loadPreset(name)` `loadBase(source)` `boxify(source,opts?)` —— `source` 可以是原作 14 人**或新增模型**（运行时角色 `miku`/`brs` 走 `LP.CHARACTERS` 本体；`id` 旁有「程序化 / 烘焙」标记） |
 | 部件 | `addPart({id?,name,category,parent,metalness?})` `addPartJSON(part)` `updatePart(id,patch)` `removePart(id)` `duplicatePart(id,newId?)` `listParts()` |
 | 图元 | `addPrimitive(partId,prim)` `updatePrimitive(partId,index,patch)` `removePrimitive(partId,index)` `listPrimitives(partId)` · 四种 `kind`：`box` `panel` `op` `geo` |
 | **精细构造** | `buildPart({recipe,params,ops,mirror,color,id,name,category,parent})` `build(partId,ops,opts)` `recipes()` `recipe(name,params)` `detailReport()` |
@@ -295,11 +296,16 @@ EditorAPI.boxify('texas', { splitByZone:false });    // 不按分区切三角形
 ```
 原作 Q.build() 把「一个网格 = 若干净图元」合并成一个 BufferGeometry，
 同时在 geometry.userData.primitiveVertexCounts 里留下每个图元占多少顶点。
+（★ 程序化移植版也一样：`src/lowpoly/model.js` 的 `Builder.build()` 会写同样的表，
+   `orig/port.js` 的 `exactMesh()` 用捕获到的原表 —— 所以 `boxify` 对移植角色同样精确。）
 → 照这张表切，切出来就是 100% 原始图元：
    圆弧倒角、斜切面、任意多边形挤出的锯齿边，全部原样保留；
    顶点色 / 法线逐顶点复制 → 外观与原作逐像素一致。
 → 再按分区规则，把「每个三角形的形心」分到语义子部件（仍是原始三角形，形状零损失）。
 → 祖先 visible=false 的网格是原作里的「默认隐藏件」，默认跳过，不再被翻出来。
+→ ★ 头 / 脸不拆（`op` 只保留 position/normal/color，贴图会丢）：
+    - 原作 14 人：拆分后由 `attachFace(id)` 用**手绘脸表**重建（`useOrigFace`）；
+    - 新增模型（初音 / 黑岩）：由 `LP.buildFace(head, LP.CHARACTERS[id])` 重建**运行时贴图脸**（`runtimeFace`）。
 ```
 拉普兰德实测：**146~157 个图元 / 24 个语义部件 / 4704 面**，与原作逐像素一致（正/侧/背对比差异 0.000%）。
 

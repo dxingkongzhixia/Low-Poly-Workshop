@@ -1,0 +1,60 @@
+flowchart TD
+  U(["用户 ↔ AI 对话<br/>AI 调 window.EditorAPI"]) --> P["每个回合第一句：<br/>EditorAPI.pipeline()"]
+  P --> Q{"status == stopped ?"}
+  Q -->|"是"| HARD["硬停 · 报告 stopReason<br/>不许继续 · 不许自己 reset"]
+  Q -->|"否"| M
+
+  subgraph M["接管方式 · 分支 1"]
+    M1["A 只读建议<br/>只读 state / tree / describe"]
+    M2["B Agent 驱动 · 推荐<br/>直接执行 JS + 租约登记"]
+    M3["C 脚本批处理<br/>产出 JS 粘贴 / 动态 import"]
+  end
+  M --> CR
+
+  subgraph CR["创建路线 · 分支 2"]
+    CR1["改造原作角色<br/>boxify id → kind op"]
+    CR2["从零做新角色<br/>addPart + addPrimitive / buildPart recipe"]
+    CR3["程序化角色<br/>src/lowpoly · 不吃参照图"]
+  end
+  CR --> S
+
+  subgraph S["基础 / 拆分源 · 分支 3"]
+    S1["LP.PORTS → buildFromPort · 程序化"]
+    S2["LP.CHARACTERS → buildCharacter proto · 程序化新增"]
+    S3["否则 → XT id · 烘焙"]
+    S4["新增模型 spec → loadStoredModel id"]
+  end
+  S --> I
+
+  subgraph I["输入 · 分支 4（程序化优先）"]
+    I1["默认 · AI 自己上网收集特征 → 特征清单"]
+    I2["有图 · reference → admit 判定<br/>多视图拼版 → refCrop 切单视图"]
+    I3["图不可用 → 换图 · 或只跑不吃图的门"]
+    I4["体态一律抄原版模型 · 图只取特征"]
+  end
+  I --> SET["准备 5 步<br/>reference → admit → palette → complexity → contract"]
+  SET --> CX{"复杂度 · 分支 5<br/>simple / moderate / complex / ultra-complex"}
+  CX --> P1
+
+  P1["blockout · IoU 0.60"] --> P2["structure · 0.72"] --> P3["hair · 0.78"] --> P4["detail · 0.80"] --> P5["color · 0.85"]
+  P5 --> STEP["每一遍固定 4 步<br/>build → render → gate → review"]
+  STEP --> G{"8 门三态 · 分支 6<br/>silhouette turntable interior chirality<br/>seam clearance scalp penetration"}
+  G --> R{"record action · 分支 7"}
+  R -->|"continue · evidence + score ≥ 0.7"| NX["换下一遍"]
+  R -->|"refine-spec · 规格错 / 浅"| LP["计一次循环 · 重置本遍"]
+  R -->|"refine-code · 实现不对"| LP
+  R -->|"request-input / stop"| HARD
+  LP --> LIM{"同一遍 ≥ 3 或 总计 ≥ 6 ?"}
+  LIM -->|"是"| HARD
+  LIM -->|"否"| STEP
+  NX --> D{"五遍走完 ?"}
+  D -->|"否"| STEP
+  D -->|"是"| F["收尾 2 步<br/>turntable → export"]
+  F --> SV["saveModel → NewlyAddedModelList"]
+
+  classDef branch fill:#1f3846,stroke:#3a5b6c,color:#eef2f3
+  classDef stop fill:#5c2b2b,stroke:#8a4444,color:#ffe2e2
+  classDef ok fill:#16302a,stroke:#3f9b66,color:#eaffef
+  class M,CR,S,I branch
+  class HARD stop
+  class SV,F ok

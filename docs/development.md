@@ -17,7 +17,7 @@
 | 目标 | 导致的设计 |
 |---|---|
 | **保真** —— 不重画，用原作的几何 | `boxify()` 按 `geometry.userData.primitiveVertexCounts` 精确切图元（**不是** AABB 近似） |
-| **一份模型代码，四个工具共用** | 规格 `spec` 是唯一的真源；编辑器/实验室/换装室/导入页都读它 |
+| **一份模型代码，四个工具共用** | 规格 `spec` 是唯一的真源；编辑器/实验室/武器编辑器/导入页都读它 |
 | **能被 AI Agent 驱动** | 所有能力都挂在 `window.EditorAPI`（116 个命令），有 `pipeline()` 状态机 + 8 个质量门 |
 
 **没有构建步骤。** 没有 npm、没有打包器、没有 TypeScript。浏览器直接吃 ES module，
@@ -39,7 +39,7 @@
 │  │ pages/docs.html + src/docs-viewer.js   文档阅读器（自写 Markdown 渲染，无 CDN）                     │ │
 │  │ pages/character-editor.html  ★部件编辑器 + window.EditorAPI（116 命令）                        │ │
 │  │ pages/character-lab.html   ★角色实验室（14 低模 + 6 高模 + 新增模型独立分区）                    │ │
-│  │ pages/character-mixer.html 换装室（跨角色槽位互换）                                             │ │
+│  │ pages/weapon-editor.html 武器编辑器（跨角色槽位互换）                                             │ │
 │  │ pages/model-import.html    模型导入（.vox/.glb/.gltf/.obj → 方块）                              │ │
 │  └──────────────────────────────────────────────────────────────────────────────────────────┘ │
 │                     │                        │                        │                       │
@@ -268,7 +268,8 @@ window.EditorAPI = EditorAPI;
 ```
 
 > **平滑网格 → 体素（`voxelizeMesh`），低模 → `boxify`**。别把 `boxify` 用在平滑网格上，
-> 它依赖 `primitiveVertexCounts`（只有原作低模有）。
+> 它依赖 `primitiveVertexCounts` —— **原作低模**（`Q.build`）和**我们的 `Builder.build`**（程序化移植 `orig/*`）都会写；
+> 部件编辑器的「基础模型 / 拆分源」现在**优先走程序化移植**（`LP.PORTS` → `buildFromPort`），没有移植的才回退 `XT`。
 
 ### 5.3 质量契约
 
@@ -299,7 +300,7 @@ contract = {
 
 `styles/shell.css` 在每个页面自己的 `<style>` **之后**加载 → **同优先级直接盖掉**。
 曾经因此在 `styles/shell.css` 里放了一条 `.scroll{max-height:220px}`，
-把编辑器和换装室的面板正文区全卡在 220px（下面一大片空白）。
+把编辑器和武器编辑器的面板正文区全卡在 220px（下面一大片空白）。
 
 **规矩**：
 - `styles/shell.css` 里只放 `#shellbar*`、`:root` 变量、以及明确属于「信息页」的样式
@@ -671,6 +672,6 @@ src/docs-viewer.js         自写 Markdown 渲染（无 CDN，保住「离线可
 pages/docs.html              文档阅读器（人看这个；AI 读原始 .md）
 pages/character-editor.html  ★部件编辑器 + EditorAPI（116 命令，273 KB 单文件）
 pages/character-lab.html     14 低模 + 6 高模 + 新增模型独立分区（还会发布角色索引）
-pages/character-mixer.html   跨角色槽位互换
+pages/weapon-editor.html   跨角色槽位互换
 pages/model-import.html      外部模型导入
 ```

@@ -1,0 +1,32 @@
+{
+  "schema": "lowpoly-workshop/weapon@1",
+  "id": "blackBlade",
+  "name": "黑刃",
+  "category": "原版武器",
+  "source": null,
+  "note": "黑岩射手 · 右手",
+  "createdAt": 1790947928866,
+  "updatedAt": 1790947928866,
+  "stats": null,
+  "spec": null,
+  "mount": 1,
+  "kind": "blade",
+  "moves": [
+    "horizontalSlash",
+    "verticalSlash"
+  ],
+  "grip": [
+    0,
+    -0.48,
+    0.04
+  ],
+  "hold": {
+    "rot": [
+      -0.6,
+      0,
+      0.44
+    ],
+    "scale": 1.28
+  },
+  "runtime": "blackBlade"
+}

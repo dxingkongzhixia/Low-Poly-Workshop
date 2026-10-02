@@ -30,7 +30,7 @@ const PORT = Number(process.env.PORT || 8765);
 const BASE = 'http://localhost:' + PORT;
 
 const PAGES = ['pages/index.html', 'pages/ai-workflow.html', 'pages/system.html', 'pages/docs.html',
-  'pages/character-editor.html', 'pages/character-lab.html', 'pages/character-mixer.html', 'pages/model-import.html'];
+  'pages/character-editor.html', 'pages/weapon-editor.html', 'pages/character-lab.html', 'pages/model-import.html'];
 
 /* 本来就不该被页面引用的元文件 / 工具脚本 —— 别把它们报成孤儿 */
 const META_FILES = new Set(['selfcheck.js', '_serve.js', 'README.md', '低模工坊-制作流程笔记.md',

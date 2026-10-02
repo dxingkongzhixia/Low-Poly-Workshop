@@ -10,7 +10,7 @@
 |---|---|---|
 | 双击 html 白屏、Console 报 `Failed to load module` | ES module 在 `file://` 下被 CORS 拦 | 必须先 `node tools/_serve.js`，用 `http://localhost:8765/` 打开 |
 | `http://localhost:8765/` 404 | 服务器没跑在项目根目录 | `cd D:\ROTK\three.js` 再 `node tools/_serve.js` |
-| 首页正常，子页 404 | 文件被移走过 | 页面都在根目录：`pages/character-editor.html` / `pages/character-lab.html` / `pages/character-mixer.html` / `pages/model-import.html` |
+| 首页正常，子页 404 | 文件被移走过 | 页面都在根目录：`pages/character-editor.html` / `pages/character-lab.html` / `pages/weapon-editor.html` / `pages/model-import.html` |
 | Console 报 `import ... from 'three'` 失败 | 外网被墙，importmap 指向 jsdelivr | 需要能访问 `cdn.jsdelivr.net`；或者把 three 换成本地副本并改 importmap |
 
 ---
@@ -98,7 +98,7 @@
 
 | 现象 | 原因 | 解决 |
 |---|---|---|
-| `部件编辑器` / `换装室` 左、右面板的列表只显示到一半就断，下面全是空的，右侧还挤出一根很短的滚动条 | `styles/shell.css` 里有一条 `.scroll{max-height:220px}`，而 editor / mixer 的 `.scroll` 是「面板里可滚动的正文区」（`.scroll{overflow:auto;flex:1}`）。**`styles/shell.css` 是在页面自己的 `<style>` 之后加载的**，同优先级直接盖掉 | 已修：`styles/shell.css` 里的 `.scroll` 已删除。各页自己定义自己的 `.scroll`，`styles/shell.css` 不要放这种「看似通用的工具类」 |
+| `部件编辑器` / `武器编辑器` 左、右面板的列表只显示到一半就断，下面全是空的，右侧还挤出一根很短的滚动条 | `styles/shell.css` 里有一条 `.scroll{max-height:220px}`，而 editor / mixer 的 `.scroll` 是「面板里可滚动的正文区」（`.scroll{overflow:auto;flex:1}`）。**`styles/shell.css` 是在页面自己的 `<style>` 之后加载的**，同优先级直接盖掉 | 已修：`styles/shell.css` 里的 `.scroll` 已删除。各页自己定义自己的 `.scroll`，`styles/shell.css` 不要放这种「看似通用的工具类」 |
 
 自查命令（在页面 Console 里）：
 

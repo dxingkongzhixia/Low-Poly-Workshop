@@ -58,6 +58,29 @@ export const Store = {
     return r.text();
   },
 
+  /* ---- ★ 武器（独立路线，和模型同一套 REST，只是 /api/weapons + weapon.json/weapon.js）---- */
+  listWeapons:   ()   => J('/api/weapons'),
+  getWeapon:     id   => J('/api/weapons/' + encodeURIComponent(id)),
+  /** { id, name, spec, js?, thumb?, note?, mount?, kind?, moves?, grip?, hold?, dir:'temporary'|'confirmed' } */
+  saveWeapon:    o    => post('/api/weapons', o),
+  confirmWeapon: id   => post('/api/weapons/' + encodeURIComponent(id) + '/confirm'),
+  unconfirmWeapon: id => post('/api/weapons/' + encodeURIComponent(id) + '/unconfirm'),
+  removeWeapon:  id   => J('/api/weapons/' + encodeURIComponent(id), { method:'DELETE' }),
+  getWeaponBundle: id => J('/api/weapons/' + encodeURIComponent(id) + '/bundle'),
+  getWeaponFiles:  id => J('/api/weapons/' + encodeURIComponent(id) + '/files'),
+  weaponFileURL: (id, name, download) =>
+    '/api/weapons/' + encodeURIComponent(id) + '/file/' + encodeURIComponent(name) + (download ? '?download=1' : ''),
+  readWeaponFile: async (id, name) => {
+    const r = await fetch(Store.weaponFileURL(id, name));
+    if(!r.ok) throw new Error('读不到 ' + id + '/' + name + '：HTTP ' + r.status);
+    return r.text();
+  },
+
+  /* ---- ★ 共享武器库（= 共享池本体：黑刃 / 黑岩巨炮 / 葱 …）---- */
+  listOriginalWeapons: ()   => J('/api/original-weapons'),
+  getOriginalWeapon:   id   => J('/api/original-weapons/' + encodeURIComponent(id)),
+  saveOriginalWeapon:  o    => post('/api/original-weapons', o),
+
   /* ---- 临时缓存（AI 测试产物都丢这里）---- */
   cacheList:  () => J('/api/cache'),
   /** { name, data, ext?, thumb? } —— data 是对象就自动 JSON 序列化 */

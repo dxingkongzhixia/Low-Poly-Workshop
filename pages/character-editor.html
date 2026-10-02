@@ -149,6 +149,75 @@ import { Pipeline, PASS_ORDER, COMPLEXITY_MINIMUMS, FEATURE_GROUPS, makeContract
          MAX_PER_PASS, MAX_TOTAL, PIPELINE_VERSION } from '../src/pipeline.js';
 import * as GATES from '../src/quality-gates.js';
 import { Store, gpuInfo, gpuAdvice } from '../src/characters.store.js';
+import * as LP from '../src/characters.lowpoly.js';   // ★ 程序化移植层（我们的 Builder）：优先代替烘焙的 XT
+
+/** ★ 基础模型来自哪一路：`ported` 程序化移植 · `runtime` 运行时角色（新增模型）· `baked` 原作烘焙 */
+function sourceKind(id){
+  if(LP.PORTS && LP.PORTS[id]) return 'ported';
+  if(LP.CHARACTERS && LP.CHARACTERS[id]) return 'runtime';
+  return 'baked';
+}
+const SOURCE_KIND = {
+  ported:  { t:'程序化',    c:'#2f7fe0', tip:'基础几何来自**程序化移植**（LP.PORTS → buildFromPort）' },
+  runtime: { t:'程序化·新增', c:'#2f9e63', tip:'基础几何来自**运行时角色本体**（LP.CHARACTERS，如初音 / 黑岩）' },
+  baked:   { t:'烘焙',      c:'#b9803a', tip:'基础几何来自**原作烘焙**（XT）—— 还没有程序化移植的角色' },
+};
+/** ★ 取基础模型 / 拆分源：优先程序化移植 → 运行时角色 → 回退原作 XT */
+function getBase(id){
+  const d = LP.PORTS && LP.PORTS[id];
+  if(d){
+    const m = LP.buildFromPort(d);
+    if(d.rootScale) m.root.scale.setScalar(d.rootScale);   // 与实验室一致：用移植数据里的根缩放
+    return m;
+  }
+  if(LP.CHARACTERS && LP.CHARACTERS[id]) return LP.buildCharacter(id).proto;   // 新增模型（运行时本体）
+  return XT(id);
+}
+/** ★ id 旁的「程序化 / 烘焙」小标记（`spec.id` 决定；base / 拆分版都适用） */
+function updateSourceBadge(){
+  const el=document.getElementById('srcBadge'); if(!el) return;
+  const info=SOURCE_KIND[sourceKind(spec.id)] || SOURCE_KIND.baked;
+  el.textContent=info.t; el.style.background=info.c; el.title=info.tip;
+}
+/** ★ 打开一个「新增模型」：命中运行时角色就当**基础模型**编辑；否则按保存的**规格**载入 */
+function openNewModel(id){
+  if(LP.CHARACTERS && LP.CHARACTERS[id]){ loadBase(id); return; }
+  EditorAPI.loadStoredModel(id).then(r=>{ toast(r.ok?('已载入 '+(r.name||id)):r.error); renderAll(); });
+}
+
+/** ★ 给大模型的系统提示词 —— 与 `docs/ai-pipeline.md` §八 同步。
+ *  任何 Agent 一进来 `EditorAPI.systemPrompt()` 就能拿到最新版，不用去翻文档。 */
+const SYSTEM_PROMPT = `你在用一个浏览器里的「低模部件编辑器」，通过 window.EditorAPI 操作它。
+
+铁律：
+1. 每个回合的第一件事必须是 EditorAPI.pipeline()。对话历史可以丢，pipeline() 才是权威。
+   返回 status:'stopped' 就是硬停 —— 立刻停下，向用户报告 stopReason，不要继续做任何事。
+2. 禁止一次性生成整个模型。必须逐遍：blockout → structure → hair → detail → color，每遍四步（实现/渲染/跑门/评审）。
+3. 每一步 pipelineMark 都必须带 evidence；skip 必须带 reason。不许静默跳过。
+4. 「没测到」不等于「通过」。gates() 的 summary.verdict 是三态：pass / fail / unevaluated。
+   有 unevaluated 就是 unevaluated。
+5. 不许为了让门通过而放宽阈值。门是问题，不是障碍。
+6. 身份特征件（头发/兽耳/马尾/饰品）必须由多个小模块拼成，不许一个大方块；
+   并且必须站在宿主外面（跑 clearance 门确认）。
+7. 左右配对用 mirrorPair，不要手工填负号 —— 左右是矢状面镜像，不是旋转。
+8. 参考图如果是三视图拼版，先 admit() 看 detectedViews，再 refCrop 切出单屏。
+   不切的话 silhouette 门的数字没有意义。
+9. ★ 人物生成**程序化优先**（代码 + 图元 + 特征清单，见 §十一）。四条：
+   ① 优先用代码建完整可动角色；② **体态抄原版模型**（§11.1 常量 / boxify 去量），**不取参考图的体态**；
+   ③ **特征自己上网收集**（公开资料 → 特征清单），不用等用户给图；
+   ④ 有图只**取特征**（头发/配色/道具/剪影要点），别做「逐像素对剪影」。
+
+工作顺序：
+  EditorAPI.pipeline() → 执行 nextCommand → 带证据 pipelineMark → 下一轮
+  每一遍结束时：render({pass:true}) → gates() → record(action, {evidence, score})
+  record 的 5 个合法动作：continue / refine-spec / refine-code / request-input / stop
+    · continue 必须 evidence + score ≥ 0.7
+    · refine-spec = 规格错或浅（回去改规格，不要改代码掩盖）
+    · refine-code = 规格对但实现不对
+  同一遍最多修正 3 次、总计 6 次，到顶会硬停。
+
+随时可用的查询：pipeline() / tree() / describe(id) / findParts(q) / recipeSchema() / contract() / validate() / state()
+`;
 
 /* ============================ 常量 ============================ */
 const OPPOSITE = { armL:'armR', armR:'armL', legL:'legR', legR:'legL' };
@@ -164,6 +233,10 @@ const BIG = 1e9;   // 分区规则里表示"不限"
 const LOW_CHARS = [['lappland','拉普兰德'],['texas','德克萨斯'],['exusiai','能天使'],['croissant','可颂'],
   ['sora','空'],['mostima','莫斯提马'],['chen','陈'],['hoshiguma','星熊'],['swire','诗怀雅'],
   ['emperor','大帝'],['lee','老鲤'],['aak','阿'],['hung','吽'],['waaifu','槐琥']];
+/** ★ 可当「基础 / 拆分源」的角色：原作 14 人 **或** 运行时角色（新增模型，如 miku / brs） */
+const isKnownBase = (id) => LOW_CHARS.some(r=>r[0]===id) || !!(LP.CHARACTERS && LP.CHARACTERS[id]);
+/** ★ 角色的中文显示名（原作表 → 运行时角色 → 退回 id） */
+const baseName = (id) => (LOW_CHARS.find(r=>r[0]===id)?.[1]) || (LP.CHARACTERS[id] && LP.CHARACTERS[id].name) || String(id);
 
 /* ============================ 规格 ============================ */
 function mkPalette(src){
@@ -742,7 +815,7 @@ function build(){
   clearBuilt();
   let G;
   if(spec.mode==='base' && spec.base && spec.base.source){
-    baseModel = XT(spec.base.source);
+    baseModel = getBase(spec.base.source);
     G = { root:baseModel.root, body:baseModel.body, head:baseModel.head,
           armL:baseModel.arms?.[0], armR:baseModel.arms?.[1],
           legL:baseModel.legs?.[0], legR:baseModel.legs?.[1],
@@ -754,6 +827,7 @@ function build(){
   }else{
     G = makeSkeleton();
     if(spec.useOrigFace) attachFace(G.head, { id:spec.id, iris:spec.iris });
+    else if(spec.runtimeFace && LP.buildFace && LP.CHARACTERS[spec.id]) LP.buildFace(G.head, LP.CHARACTERS[spec.id]);   // ★ 新增模型：重建运行时贴图脸（保住眼睛）
     applyRig(G);
   }
   for(const part of spec.parts){
@@ -837,7 +911,7 @@ function roleGroupOf(m, role){
 function sourceParts(source){
   const id=String(source);
   if(SRC_CACHE.has(id)) return SRC_CACHE.get(id);
-  const m=XT(id);
+  const m=getBase(id);
   m.root.updateMatrixWorld(true);
   const groups={ body:m.body, head:m.head, armL:m.arms?.[0], armR:m.arms?.[1],
     legL:m.legs?.[0], legR:m.legs?.[1], coatTails:m.coatTails||null, tail:m.tail||null };
@@ -1082,9 +1156,13 @@ function boxifySpec(source, { zones=null, splitByZone=true, maxBoxes=4000, inclu
     }
   }
   const G=src.groups;
-  const s={ id:String(source), name:(LOW_CHARS.find(c=>c[0]===source)?.[1]||source)+'（拆分版）',
-    mode:'parts', base:null, useOrigFace:true,
-    iris: AT[source]? AT[source].slice() : [0xffffff,0xffffff,0xffffff],
+  /* ★ 脸分两种：原作 14 人用手绘脸表（attachFace）；新增模型（运行时角色）用它自己的**贴图脸**（buildFace）。
+     贴图脸没法拆成 `op`（op 只保留 position/normal/color），所以拆分版要**单独重建**它。 */
+  const isOrig = LOW_CHARS.some(r=>r[0]===source);
+  const rtChar = (!isOrig && LP.CHARACTERS && LP.CHARACTERS[source]) || null;
+  const s={ id:String(source), name:baseName(source)+'（拆分版）',
+    mode:'parts', base:null, useOrigFace:isOrig, runtimeFace:!!rtChar,
+    iris: AT[source]? AT[source].slice() : (rtChar && rtChar.eyes ? rtChar.eyes.slice() : [0xffffff,0xffffff,0xffffff]),
     palette: mkPalette(source),
     zones: JSON.parse(JSON.stringify(zoneList)),
     rig: measureRig({ body:G.body, head:G.head, armL:G.armL, armR:G.armR,
@@ -1919,6 +1997,9 @@ function renderPipelinePanel(){
   mk('存入档','',()=>EditorAPI.saveSession().then(()=>toast('已存档')));
   mk('读档','',()=>{ const r=EditorAPI.loadSession(); toast(r.ok?'已读档':r.error); renderPipelinePanel(); });
   mk('导出存档','',()=>EditorAPI.exportSession().then(r=>download(new Blob([r.json],{type:'application/json'}),'session.json')));
+  mk('复制系统提示词','',async()=>{ const p=EditorAPI.systemPrompt().prompt;
+    try{ await navigator.clipboard.writeText(p); toast('系统提示词已复制 · '+p.length+' 字'); }
+    catch(e){ console.log(p); toast('剪贴板不可用 → 已打印到控制台'); } });
   mk('重置流水线','danger',()=>{ if(confirm('重置流水线状态？（规格不会变）')){ EditorAPI.pipelineReset(); renderPipelinePanel(); } });
   b.appendChild(g);
 
@@ -1953,8 +2034,13 @@ pipeBody=section('生成流水线','AI 流程 · 质量门（先调 pipeline()�
 });
 
 section('模型','基础 / 拆分版',true,b=>{
-  b.appendChild(row('id',(()=>{ const i=document.createElement('input'); i.type='text'; i.value=spec.id;
-    i.oninput=()=>{ spec.id=i.value.trim()||'model'; }; return i; })()));
+  b.appendChild(row('id',(()=>{
+    const wrap=document.createElement('div'); wrap.style.cssText='display:flex;align-items:center;gap:6px;flex:1';
+    const i=document.createElement('input'); i.type='text'; i.value=spec.id;
+    i.oninput=()=>{ spec.id=i.value.trim()||'model'; updateSourceBadge(); updateHud(); };
+    const badge=document.createElement('span'); badge.id='srcBadge';
+    badge.style.cssText='font-size:10px;padding:1px 7px;border-radius:9px;white-space:nowrap;color:#fff;background:var(--muted)';
+    wrap.append(i,badge); return wrap; })()));
   b.appendChild(row('名称',(()=>{ const i=document.createElement('input'); i.type='text'; i.value=spec.name;
     i.oninput=()=>{ spec.name=i.value; updateHud(); }; return i; })()));
   const src=document.createElement('select');
@@ -1962,6 +2048,19 @@ section('模型','基础 / 拆分版',true,b=>{
     if(spec.base&&spec.base.source===id) o.selected=true; src.appendChild(o); }
   src.onchange=()=>{ loadBase(src.value); };
   b.appendChild(row('基础角色',src));
+  /* ★ 新增模型（NewlyAddedModelList / 临时区）：运行时角色 → 当**基础模型**编辑；规格 → 直接**载入规格** */
+  const nsel=document.createElement('select'); nsel.id='newSrcSel';
+  { const o0=document.createElement('option'); o0.value=''; o0.textContent='— 选择新增模型 —'; nsel.appendChild(o0); }
+  nsel.onchange=()=>{ if(nsel.value) openNewModel(nsel.value); };
+  b.appendChild(row('新增模型',nsel));
+  Store.listModels().then(r=>{
+    const all=[ ...(r.confirmed||[]).map(m=>({ ...m, where:'已确认' })),
+                ...(r.temporary||[]).map(m=>({ ...m, where:'待确认' })) ];
+    for(const m of all){ const o=document.createElement('option'); o.value=m.id;
+      o.textContent=(m.name||m.id)+' · '+(sourceKind(m.id)==='runtime'?'程序化':'规格')+' · '+m.where;
+      if(spec.id===m.id) o.selected=true; nsel.appendChild(o); }
+  }).catch(()=>{});
+  updateSourceBadge();
   const g=document.createElement('div'); g.className='btns';
   const mk=(t,cls,fn)=>{ const x=document.createElement('button'); x.className=cls||''; x.textContent=t; x.onclick=fn; g.appendChild(x); };
   mk('转成可编辑部件','pri',()=>{ const s=spec.base?spec.base.source:'lappland'; spec=boxifySpec(s); detachGizmo(); selectedId=null; build(); renderAll(); toast('已拆成可编辑部件（原始形状保留）'); });
@@ -1970,7 +2069,7 @@ section('模型','基础 / 拆分版',true,b=>{
   mk('清空新增部件','danger',()=>{ spec.parts=[]; detachGizmo(); build(); renderAll(); });
   b.appendChild(g);
   const n=document.createElement('div'); n.style.cssText='font-size:10.5px;color:var(--dim);line-height:1.5';
-  n.textContent='基础模型是原作低模（几何已烘焙），可整体移动/旋转/缩放或隐藏；想逐个图元编辑请点「转成可编辑部件」（保留原始形状）。';
+  n.textContent='基础模型走**程序化移植**（我们的 Builder 重建原作低模），可整体移动/旋转/缩放或隐藏；想逐个图元编辑请点「转成可编辑部件」（保留原始形状）。';
   b.appendChild(n);
 });
 
@@ -2600,7 +2699,7 @@ section('显示 / 导出','',true,b=>{
     r.onload=()=>EditorAPI.importSculptSpec(r.result).then(x=>toast(x.ok?`已导入雕塑规格：${x.parts} 个部件`:'导入失败')); r.readAsText(f); };
   sc.append(scUrl, scGo, scFile); b.appendChild(sc);
 });
-function renderAll(){ build(); renderSel(); renderBudget(); }
+function renderAll(){ build(); renderSel(); renderBudget(); updateSourceBadge(); }
 
 /* ============================ 部件树 ============================ */
 function partTriangles(part){ let n=0;
@@ -2687,7 +2786,7 @@ function addPartCmd({id,name,category,parent,metalness,withBox}){
   return nid;
 }
 function loadBase(source){
-  spec={ ...lapplandSpec(), id:source, name:(LOW_CHARS.find(c=>c[0]===source)?.[1]||source)+'（低模）',
+  spec={ ...lapplandSpec(), id:source, name:baseName(source)+'（低模）',
          base:{source,transforms:{},hidden:[]}, palette:mkPalette(source),
          zones: defaultZones(),
          iris:AT[source]?AT[source].slice():[0xffffff,0xffffff,0xffffff] };
@@ -2703,7 +2802,7 @@ function exportCode(){
   const L=[];
   L.push(`/* ============================================================`);
   L.push(`   由「低模部件编辑器」导出 —— ${spec.name} (${spec.id})`);
-  L.push(`   依赖：src/characters.orig.js 的 Q / XT${spec.useOrigFace? ' + src/characters.face.js 的 attachFace':''}；`);
+  L.push(`   依赖：src/characters.orig.js 的 Q / XT${spec.useOrigFace? ' + src/characters.face.js 的 attachFace':''} + src/characters.lowpoly.js 的 LP（程序化移植，优先）；`);
   L.push(`   用法：const c = ${FN}(); scene.add(c.root);`);
   L.push(`   ============================================================ */`);
   L.push(`function ${FN}(){`);
@@ -2727,8 +2826,11 @@ function exportCode(){
   };
   let baseNote='', applyBase='';
   if(spec.mode==='base' && spec.base){
-    L.push(`  // 复用作原低模作为基础，再叠加新增部件`);
-    L.push(`  const base = XT(${JSON.stringify(spec.base.source)});`);
+    const bsrc = String(spec.base.source);
+    L.push(`  // 复用原低模 / 运行时角色作为基础，再叠加新增部件`);
+    if(LP.PORTS && LP.PORTS[bsrc])            L.push(`  const base = LP.buildFromPort(LP.PORTS[${JSON.stringify(bsrc)}]);`);
+    else if(LP.CHARACTERS && LP.CHARACTERS[bsrc]) L.push(`  const base = LP.buildCharacter(${JSON.stringify(bsrc)}).proto;`);
+    else                                       L.push(`  const base = XT(${JSON.stringify(bsrc)});`);
     L.push(`  const root=base.root, body=base.body, head=base.head,`);
     L.push(`        armL=base.arms[0], armR=base.arms[1], legL=base.legs[0], legR=base.legs[1],`);
     L.push(`        coatTails=base.coatTails, tail=base.tail;`);
@@ -2789,7 +2891,7 @@ function exportCode(){
     L.push(`  // ---- 原作图元拆分器（保留原始形状：倒角/斜切/多边形挤出）----`);
     L.push(`  const SRCID=${JSON.stringify(srcId)};`);
     L.push(`  const SKIP=${JSON.stringify(skips)};`);
-    L.push(`  const _src=XT(SRCID); _src.root.updateMatrixWorld(true);`);
+    L.push(`  const _src=(typeof LP!=='undefined'&&LP.PORTS&&LP.PORTS[SRCID])?LP.buildFromPort(LP.PORTS[SRCID]):XT(SRCID); _src.root.updateMatrixWorld(true);`);
     L.push(`  const MESHTAB=[]; _src.root.traverse(o=>{ if(o.isMesh && o.geometry && o.geometry.userData && o.geometry.userData.primitiveVertexCounts && !SKIP.includes(o.name)) MESHTAB.push(o); });`);
     L.push(`  function __op(role,mi,pi,tris,pos,rot,scl,color,mir,name,metal,rough){`);
     L.push(`    const o=MESHTAB[mi]; if(!o) return;`);
@@ -3258,12 +3360,15 @@ const EditorAPI = {
   version: API_VERSION,
 
   /* ---- 文档 / 自省 ---- */
+  /** ★ 一键拿「给大模型的系统提示词」（与 docs/ai-pipeline.md §八 同步） */
+  systemPrompt(){ agentHeartbeat(); return ok({ version: PIPELINE_VERSION, docs:'docs/ai-pipeline.md §八', prompt: SYSTEM_PROMPT }); },
   help(){
     return [
       'window.EditorAPI —— 低模部件编辑器 · 面向大模型的 JSON 接口',
       '',
       '自省：',
       '  help()                     返回本说明文本',
+      '  systemPrompt()             返回「给大模型的系统提示词」（最新版，可直接粘贴）',
       '  schema()                   返回规格结构说明（类别/父级/调色板键/预算/角色表）',
       '  state()                    返回当前状态摘要（规格 + 选择 + 统计 + 包围盒）',
       '  reference(source=\'lappland\') 返回原作某低模的测量数据（比例/调色板/每个部件的包围盒）——做新角色时的参照',
@@ -3272,8 +3377,8 @@ const EditorAPI = {
       '规格：',
       '  getSpec() / setSpec(spec)  读取 / 整体替换规格',
       '  loadPreset(name)           载入预设（见 schema().presets）',
-      '  loadBase(source)           设为基础角色（原作低模，可整体拖/隐藏）',
-      '  boxify(source, opts?)      把原作低模「精确拆分」成可单独编辑的图元：',      '                             保留原始几何（倒角/斜切/多边形挤出的锯齿都在），只是按',
+      '  loadBase(source)           设为基础角色（原作低模 / 新增模型，可整体拖/隐藏；程序化优先，回退 XT）',
+      '  boxify(source, opts?)      把基础模型「精确拆分」成可单独编辑的图元：',      '                             保留原始几何（倒角/斜切/多边形挤出的锯齿都在），只是按',
       '                             primitiveVertexCounts 切开 + 按分区规则把三角形分组。',
       '                             opts={ splitByZone=true, includeHidden=false, zones, maxBoxes }',
       '                             · 原作里 visible=false 的「默认隐藏件」默认跳过（否则会被翻出来）；',
@@ -3377,7 +3482,8 @@ const EditorAPI = {
       '  await saveModel({name,note,confirmed})   把当前规格存成「新增模型」',
       '       默认 → NewlyAddedModelTemporaryList（临时）；confirmed:true 直接进 NewlyAddedModelList（正式）',
       '  await listStoredModels()                 列出已保存的（{confirmed:[],temporary:[]}）',
-      '  await loadStoredModel(id)                载入已保存的模型回编辑器',
+      '  await loadStoredModel(id)                载入已保存的模型回编辑器（规格）',
+      '        · 运行时角色（miku/brs 等 LP.CHARACTERS）也可 loadBase(id)/boxify(id) —— 走运行时本体',
       '  await confirmModel(id) / unconfirmModel(id) / removeStoredModel(id)',
       '  await cachePut({name,data})              丢进 TemporaryCache（AI 测试产物都放这）',
       '  await gateAndCache({passId})             ★ 跑门 + 存报告 + 存截图，一步到位',
@@ -3509,14 +3615,14 @@ const EditorAPI = {
   loadPreset(name){ if(!PRESETS[name]) return err('未知预设: '+name);
     spec=PRESETS[name](); detachGizmo(); selectedId=null; build(); renderAll(); renderPartList(); return ok({preset:name}); },
   loadBase(source){ const id=String(source||'');
-    if(!LOW_CHARS.find(r=>r[0]===id))
-      return err('未知角色: '+JSON.stringify(id)+'（可用: '+LOW_CHARS.map(r=>r[0]).join(', ')+'）');
+    if(!isKnownBase(id))
+      return err('未知角色: '+JSON.stringify(id)+'（可用: '+LOW_CHARS.map(r=>r[0]).join(', ')+' + 新增模型）');
     try{ loadBase(id); }catch(e){ return err('载入失败（'+id+'）：'+((e&&e.message)||e)); }
     return ok({source:id}); },
   boxify(source, options){
     const id = String(source||'');
-    if(!LOW_CHARS.find(r=>r[0]===id))
-      return err('未知角色: '+JSON.stringify(id)+'（可用: '+LOW_CHARS.map(r=>r[0]).join(', ')+'）');
+    if(!isKnownBase(id))
+      return err('未知角色: '+JSON.stringify(id)+'（可用: '+LOW_CHARS.map(r=>r[0]).join(', ')+' + 新增模型）');
     try{
       spec=boxifySpec(id, options||{}); detachGizmo(); selectedId=null; build(); renderAll(); renderPartList(); renderZones();
     }catch(e){ return err('拆分失败（'+id+'）：'+((e&&e.message)||e)); }
@@ -3587,7 +3693,7 @@ const EditorAPI = {
       meshes.push({ name:o.name||'', category:guessCategory(o.name), role: roleOfBase(m,o),
         size:[sz.x,sz.y,sz.z].map(v=>+v.toFixed(3)), center:[c.x,c.y,c.z].map(v=>+v.toFixed(3)),
         color:'#'+avgVertexColor(o.geometry).toString(16).padStart(6,'0') }); }});
-    return { source:String(source), label:(LOW_CHARS.find(c=>c[0]===source)?.[1]||source),
+    return { source:String(source), label:baseName(source),
       rig: measureRig({ body:m.body, head:m.head, armL:m.arms?.[0], armR:m.arms?.[1],
         legL:m.legs?.[0], legR:m.legs?.[1], coatTails:m.coatTails, tail:m.tail, root:m.root }),
       headScale:Ft.slice().map(v=>+v.toFixed(4)),
@@ -3615,6 +3721,8 @@ const EditorAPI = {
    *  用于「模型导入」页导出的 .part.json，或任何外部生成的方块列表 */
   addPartJSON(p){ if(!p || !Array.isArray(p.primitives) || !p.primitives.length)
       return err('需要 { name, category, parent, primitives:[...] }');
+    if(p.parent && !PARENTS.some(x=>x[0]===p.parent))
+      return err('未知父级: '+p.parent+'（可用: '+PARENTS.map(x=>x[0]).join(', ')+'）');
     const id=p.id||('imp'+Math.random().toString(36).slice(2,5));
     if(spec.parts.some(x=>x.id===id)) return err('部件 id 已存在: '+id);
     const np={ id, name:p.name||'导入部件', category:p.category||'额外装饰',
@@ -3622,9 +3730,13 @@ const EditorAPI = {
       primitives:p.primitives.map(q=>normPrim(Object.assign({}, q))) };
     spec.parts.push(np); build(); renderAll(); renderPartList();
     return ok({ id, primitives:np.primitives.length, triangles:partTriangles(np) }); },
-  addPart(args={}){ const id=addPartCmd({ id:args.id, name:args.name, category:args.category,
+  addPart(args={}){ if(args.parent && !PARENTS.some(x=>x[0]===args.parent))
+      return err('未知父级: '+args.parent+'（可用: '+PARENTS.map(x=>x[0]).join(', ')+'）');
+    const id=addPartCmd({ id:args.id, name:args.name, category:args.category,
       parent:args.parent, metalness:args.metalness, withBox: args.withBox!==false }); return ok({id}); },
   updatePart(id,patch={}){ const p=spec.parts.find(x=>x.id===id); if(!p) return err('无此部件: '+id);
+    if(patch.parent && !PARENTS.some(x=>x[0]===patch.parent))
+      return err('未知父级: '+patch.parent+'（可用: '+PARENTS.map(x=>x[0]).join(', ')+'）');
     for(const k of ['name','category','parent','mirror','metalness']) if(k in patch) p[k]=patch[k];
     build(); renderAll(); renderPartList(); return ok(); },
   removePart(id){ const i=spec.parts.findIndex(x=>x.id===id); if(i<0) return err('无此部件: '+id);

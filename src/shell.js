@@ -13,15 +13,15 @@
   /* 工具页：做模型 */
   var TOOLS = [
     ['character-editor.html', '部件编辑器',  '逐图元编辑 · 分区规则 · 刀切平面 · EditorAPI'],
-    ['character-lab.html',    '角色实验室',  '14 低模 + 6 高模 + 新增模型 · 动画 · 调色 · 导出'],
-    ['character-mixer.html',  '换装室',      '槽位混搭 · 跨角色部件互换'],
+    ['weapon-editor.html',    '武器编辑器',  '武器本体 + 挂载/种类 + 动作绑定（独立路线）'],
+    ['character-lab.html',    '角色实验室',  '原始 14 低模 + 6 高模 + 新增模型（初音 / 黑岩）· 状态机 · 武器池 · 调色 · 导出'],
     ['model-import.html',     '模型导入',    '.vox / .glb / .gltf / .obj → 可编辑方块']
   ];
   /* 信息页：看流程 / 看状态 / 查文档 */
   var INFO = [
     ['ai-workflow.html', 'AI 工作流', 'AI 怎么接管 · 谁在接管 · 接口边界'],
     ['system.html',      '系统状态',  '显卡 / Agent 租约 / 临时缓存 / 新增模型'],
-    ['docs.html',        '文档',      '按症状查 · 9 篇文档 · 文件地图']
+    ['docs.html',        '文档',      '按症状查 · 10 篇文档 · 文件地图']
   ];
   var ALL = TOOLS.concat(INFO);
 

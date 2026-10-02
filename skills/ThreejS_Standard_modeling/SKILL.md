@@ -26,6 +26,21 @@ Every reference image must be adapted to the standard's look (a ~2.4-head chibi 
 
 Measured skeleton data is already extracted to `reference/standard-landmarks.json`. Regenerate with `node tools/measure-standard.js reference/iE.json`.
 
+### Feature-led beats image-led (field note)
+
+The best results came from letting the model **identify the character's signature features and choose the construction itself**, not from tracing a reference image pixel by pixel.
+
+- ✅ **Feature-led** — hand over the identity as a short feature list (silhouette, hair, palette, one or two props, a signature gesture) and let the model decide which `stack` / `shapeExtrude` / `ribbon` / `panel` builds each one, on top of the standard skeleton. The two shipped code-built characters (`HATSUNE MIKU`, `BLACK★ROCK SHOOTER` — see `docs/lowpoly-runtime.md`) were made exactly this way, entirely in code, and read better than any image-matched attempt.
+- ❌ **Image-led** — "make it look exactly like this picture" pushes the model into per-pixel silhouette matching: it fights the standard proportions, over-fits a single view, and comes back with flat, un-articulated shapes.
+
+**Where do the features come from?** By default, **let the agent collect them itself** — research the character's public materials online and reduce them to a short feature list. **You do not need the user to supply an image.**
+
+**If you do have a reference image**, mine it for *features* only — hair shape, palette, props, the few big shapes in the silhouette, one signature gesture. **Never take its body proportions.**
+
+**Where does the body come from?** Always the **original models** — the standard skeleton constants (`docs/ai-pipeline.md` §11.1), or measure a shipped model with `EditorAPI.boxify('<id>')` / `ModelReadout.dump()`.
+
+So: keep the **original-model body**, and spend the reference budget on **features, not tracing**. A feature list is worth more than a photo.
+
 ## Included materials
 
 - `USAGE.md` — **complete usage manual. Start here.**

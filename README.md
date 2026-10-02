@@ -37,7 +37,7 @@
 | | |
 |---|---|
 | **保真** | `boxify()` 按几何自带的 `primitiveVertexCounts` **精确**把原作模型切成可编辑图元 —— 不是包围盒近似。像素级 diff vs 原作 = **0.000%** |
-| **一份模型代码，四个工具共用** | 唯一的真源是一份 `spec`（命名部件 + 四种图元），编辑器 / 实验室 / 换装室 / 导入页都读它 |
+| **一份模型代码，四个工具共用** | 唯一的真源是一份 `spec`（命名部件 + 四种图元），编辑器 / 实验室 / 武器编辑器 / 导入页都读它 |
 | **能被 AI 驱动** | 所有能力都挂在 `window.EditorAPI`（116 个命令），配 27 步状态机 + 8 个质量门 + Agent 租约制 |
 
 ### 四种图元
@@ -56,8 +56,8 @@
 | 部件编辑器 | 角色实验室 |
 |---|---|
 | ![编辑器](images/previews/preview-editor-split.png) | ![实验室](images/previews/preview-hires6.png) |
-| **换装室**（跨角色槽位混搭） | **新增模型**（自己做的角色） |
-| ![换装室](images/previews/preview-mixer.png) | ![新增模型](images/previews/preview-brm-q34.png) |
+| **武器编辑器**（跨角色槽位混搭） | **新增模型**（自己做的角色） |
+| ![武器编辑器](images/previews/preview-mixer.png) | ![新增模型](images/previews/preview-brm-q34.png) |
 
 ---
 
@@ -87,7 +87,7 @@ Windows 上双击 **`启动-低模工坊.bat`** 也一样（会顺手开浏览�
 |---|---|
 | **部件编辑器**<br>`pages/character-editor.html` | 逐图元编辑（保留圆角/斜切/锯齿）· 分区规则 · 刀切平面 · 体素/GLB 导入 · 暴露 `window.EditorAPI` + 生成流水线 + 质量门 |
 | **角色实验室**<br>`pages/character-lab.html` | 14 个原作低模 + 6 个烘焙高模 + **新增模型独立分区** · 动画 · 调色板 · 截图 / JSON / GLB 导出 |
-| **换装室**<br>`pages/character-mixer.html` | 按槽位（头/脸·头发·左臂·右臂·左腿·右腿·后摆·兽尾·光环·道具）把不同角色的部件互换 |
+| **武器编辑器**<br>`pages/weapon-editor.html` | 按槽位（头/脸·头发·左臂·右臂·左腿·右腿·后摆·兽尾·光环·道具）把不同角色的部件互换 |
 | **模型导入**<br>`pages/model-import.html` | `.vox`(VoxelAI Studio / MagicaVoxel) / `.glb` / `.gltf` / `.obj` → 按连通分量拆成轴对齐盒 → 可编辑方块 |
 
 外加三个信息页：**AI 工作流** / **系统状态** / **文档**（导航条右侧那一组，互相独立、不跳回启动页）。
@@ -166,7 +166,7 @@ curl http://localhost:8765/api/models/<id>/file/model.js
 │   ├─ index.html                启动页
 │   ├─ character-editor.html     ★ 部件编辑器 + EditorAPI（116 命令，单文件）
 │   ├─ character-lab.html        角色实验室
-│   ├─ character-mixer.html      换装室
+│   ├─ weapon-editor.html      武器编辑器
 │   ├─ model-import.html         模型导入
 │   └─ ai-workflow.html / system.html / docs.html   信息页
 │
@@ -262,7 +262,7 @@ git push
 - **原作低模没有网格文件** —— 它是 `XT(id)` 现场算出来的。`boxify()` 之后才能拿到可编辑的图元。
 - **`variantSpec()` 只能用在 box/geo 图元的规格上**（比如「通用体型」预设）。
   对 `boxify()` 出来的 `op` 图元算不出躯干顶/脚底，只会挪骨架、不缩放几何（会返回一条 `warn`）。
-- **低模和高模混搭比例会不一致**（两套骨架），换装室里会提示。
+- **低模和高模混搭比例会不一致**（两套骨架），武器编辑器里会提示。
 - **bundle 提取靠人工对读**，`characters.*.js` 里的名字是压缩后的（`XT` / `Q` / `KT` …），
   没做 demangle，读起来确实痛苦。
 

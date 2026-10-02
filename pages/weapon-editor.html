@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>企鹅物流 · 武器编辑器</title>
+<style>
+  /* 主题变量统一在 styles/shell.css（本页不重复定义） */
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:Arial,"PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden}
+  canvas{display:block}
+  #panel{position:fixed;top:0;right:0;height:100%;width:360px;background:var(--glass);
+    border-left:1px solid var(--line);display:flex;flex-direction:column;z-index:20}
+  #panel header{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+  #panel header h1{margin:0;font-size:15px;letter-spacing:.1em;font-weight:800}
+  #panel header p{margin:6px 0 0;font-size:11px;color:var(--dim);line-height:1.5}
+  #scroll{overflow:auto;flex:1;padding:12px 14px 90px}
+  .sec{margin-bottom:14px;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .sec>h2{margin:0;padding:8px 10px;font-size:12px;letter-spacing:.06em;background:var(--panel2);
+    color:var(--accent);font-weight:700;cursor:pointer;user-select:none;display:flex;justify-content:space-between}
+  .sec>h2 span{color:var(--dim);font-size:10px;font-weight:400}
+  .sec .body{padding:10px;display:flex;flex-direction:column;gap:9px}
+  .sec.collapsed .body{display:none}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .grid button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:4px;
+    padding:7px 6px;font-size:12px;cursor:pointer;transition:.15s}
+  .grid button:hover{background:var(--hover);border-color:var(--accent)}
+  .grid button.on{background:var(--ok-bg2);border-color:var(--ok-line);color:var(--ok-ink)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+  .row label{color:var(--dim)}
+  input[type=text],textarea,select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+    border-radius:4px;padding:4px 6px;font-size:12px;font-family:inherit}
+  input[type=text]{width:150px}
+  textarea{width:100%;height:150px;font-family:Consolas,monospace;font-size:11px;line-height:1.5;resize:vertical}
+  select{width:150px}
+  .hint{font-size:11px;color:var(--dim);line-height:1.6}
+  .plist{max-height:150px;overflow:auto;border:1px solid var(--line);border-radius:4px}
+  .prow{padding:4px 7px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--hairline)}
+  .prow:hover{background:var(--hover)}
+  .prow.on{background:var(--sel);color:var(--sel-ink)}
+  #toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:40;background:var(--ok-bg2);
+    border:1px solid var(--ok-line);color:var(--ok-ink);padding:8px 14px;border-radius:6px;font-size:12px;
+    opacity:0;transition:.25s;pointer-events:none}
+  #toast.on{opacity:1}
+  #vhint{position:fixed;left:12px;bottom:12px;z-index:15;font-size:11px;color:var(--dim);
+    background:var(--note);border:1px solid var(--line);border-radius:5px;padding:6px 9px;line-height:1.6}
+  .tag{display:inline-block;font-size:10px;padding:1px 5px;border-radius:3px;background:var(--panel2);
+    border:1px solid var(--line);color:var(--dim);margin-left:4px}
+</style>
+<script>/* 主题：在样式生效前先套用一次，避免深→浅闪白 */try{if(localStorage.getItem('lowpoly-theme')==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
+<link rel="stylesheet" href="../styles/shell.css">
+<script src="../src/shell.js" defer></script>
+</head>
+<body>
+<div id="panel">
+  <header>
+    <h1>武器编辑器 · 独立路线</h1>
+    <p>武器**不跟人物建模走**：没有骨架，在自己的坐标系里建（握把在原点）<br>
+       挂载数（单手/双手）· 种类（刀/锤/枪/炮/盾…）· 绑定的动作 —— 存进 NewlyAddedWeaponList/</p>
+  </header>
+  <div id="scroll"></div>
+</div>
+<div id="vhint">点选图元 → gizmo 拖动 · <b>W</b> 移动 / <b>E</b> 旋转 / <b>R</b> 缩放 · <b>Delete</b> 删除 · <b>Esc</b> 取消选中</div>
+<div id="toast"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { Store } from '../src/characters.store.js';
+import * as LP from '../src/characters.lowpoly.js';   // 借它的 Builder（拆解）/ ATTACKS（动作库）/ 种类表
+
+/* ============================================================ 场景 ----------
+ * ★ 无地面、无网格：武器**悬空**显示（免得「贴着地面」），相机自动框住它。 */
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight);
+if('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xa9b4ba);
+const camera = new THREE.PerspectiveCamera(38, innerWidth/innerHeight, .01, 100);
+camera.position.set(.9, .8, 1.5);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, .25, 0); controls.update();
+scene.add(new THREE.HemisphereLight(0xffffff, 0x556070, 1.15));
+const dl = new THREE.DirectionalLight(0xffffff, 1.35); dl.position.set(2.5, 4, 2.2); dl.castShadow = true;
+dl.shadow.mapSize.set(1024,1024); scene.add(dl);
+scene.add(new THREE.AxesHelper(1.1));                 // 只要一个极淡的坐标轴做方位参考
+
+/* ★ 编辑 gizmo（和部件编辑器一套）：拖动 / 旋转 / 缩放选中的图元 */
+const gizmo = new TransformControls(camera, renderer.domElement);
+gizmo.setSize(.9);
+gizmo.addEventListener('dragging-changed', e => { controls.enabled = !e.value; });
+gizmo.addEventListener('objectChange', onGizmoChange);
+scene.add(gizmo);
+
+/* 握把标记：武器在**自己的坐标系**里建，原点 = 握把 */
+const gripMark = new THREE.Mesh(new THREE.SphereGeometry(.018, 12, 10),
+  new THREE.MeshBasicMaterial({ color:0xffb454 }));
+scene.add(gripMark);
+
+let weaponGroup = null;
+const KIND_KEYS = LP.WEAPON_CATEGORIES || ['blade','hammer','gun','cannon','shield','staff','chain','case'];
+const KIND_LABEL = LP.WEAPON_CATEGORY_LABEL || {};
+const MOUNT_LABEL = { 1:'单手', 2:'双手' };
+
+/* ============================================================ 状态 ---------- */
+const W = { list: [], current: null, sel: -1, draft: newWeapon() };
+function newWeapon(){
+  return {
+    id:'', name:'新武器', mount:1, kind:'blade', moves:[], grip:[0,0,0], hold:null,
+    primitives: [ { kind:'box', x:0,y:.35,z:0, w:.06,h:.7,d:.06, color:0x8b939c } ],
+  };
+}
+const toastEl = document.getElementById('toast');
+let toastT = 0;
+function toast(msg){ toastEl.textContent = msg; toastEl.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(()=>toastEl.classList.remove('on'), 1800); }
+
+/* ============================================================ 武器建模流水线 ----
+ * ★ 比人物流水线**轻**：武器**没有体态要求**（不受头身比/四肢影响），所以没有 silhouette/接缝那套门，
+ *   只有「别漏步」。特征由 AI **自己上网收集**，或从参考图**只取特征**；动作**复用同类型模板**。 */
+const WEAPON_STEPS = [
+  { id:'features',   label:'收集特征',          command:"WeaponAPI.features('剪影/部件/配色/材质')   ← 自己上网查，或从参考图只取特征" },
+  { id:'meta',       label:'定名称 · 挂载 · 种类', command:"WeaponAPI.setMeta({ name:'…', mount:1|2, kind:'blade|hammer|gun|cannon|shield|staff|chain|case' })" },
+  { id:'moves',      label:'套同类型动作模板',   command:"WeaponAPI.applyKindTemplate(kind)   ← 复用同类型武器的招，之后可手调" },
+  { id:'primitives', label:'图元建本体',         command:"WeaponAPI.setPrimitives([ {kind:'box'|'panel'|'geo', …} ]) / addPrimitive(p)   ← 视口里也能拖动/旋转/增删" },
+  { id:'preview',    label:'预览剪影',           command:"WeaponAPI.render() / snapshot()   ← 转一圈看剪影和比例" },
+  { id:'save',       label:'存库',               command:"WeaponAPI.save({ confirmed:false|true })" },
+];
+const WP_KEY = 'lowpoly-weapon-pipeline';
+function wpNew(){ return { steps: WEAPON_STEPS.map(s=>({ id:s.id, label:s.label, command:s.command, status:'pending', evidence:'' })) }; }
+function wpLoadSafe(){ try{ const j=JSON.parse(localStorage.getItem(WP_KEY)); if(j&&j.steps&&j.steps.length===WEAPON_STEPS.length) return j; }catch(e){} return wpNew(); }
+function wpSave(){ try{ localStorage.setItem(WP_KEY, JSON.stringify(WP.state)); }catch(e){} }
+const WP = { state: wpLoadSafe() };
+function wpNext(){ return WP.state.steps.find(s=>s.status==='pending') || null; }
+function wpStatus(){
+  const next = wpNext();
+  return { ok:true, currentStep: next ? next.id : 'complete', nextCommand: next ? next.command : null,
+    nextLabel: next ? next.label : '完成（可继续微调或存新的）',
+    steps: WP.state.steps.map(s=>({ ...s, isCurrent: !!(next && next.id===s.id) })),
+    progress:{ done: WP.state.steps.filter(s=>s.status==='done').length, total: WP.state.steps.length } };
+}
+function wpMark(id, { status='done', evidence }={}){
+  const row = WP.state.steps.find(s=>s.id===id);
+  if(!row) return { ok:false, error:'没有这一步：'+id, valid: WP.state.steps.map(s=>s.id) };
+  const next = wpNext();
+  if(status==='done' && next && row.id!==next.id) return { ok:false, error:'必须按顺序：先做 '+next.id+'（'+next.label+'）' };
+  if(status==='done' && !(evidence && String(evidence).trim())) return { ok:false, error:'标记 done 必须带 evidence' };
+  row.status = status; row.evidence = String(evidence||'');
+  wpSave(); refreshWp();
+  return { ok:true, step:row.id, status, next: wpStatus() };
+}
+/** 给 AI Agent 的武器系统提示词（和人物那份一个路子，但武器**没有体态要求**） */
+const WEAPON_SYSTEM_PROMPT = `你在用浏览器里的「武器编辑器」，通过 window.WeaponAPI 操作它。
+
+武器建模**不跟人物走**：没有骨架、**没有体态要求**（不受头身比/四肢/站姿影响）。
+武器在**自己的坐标系**里建（握把在原点），只关心：剪影 / 部件构成 / 配色 / 材质感。
+
+铁律：
+1. 每个回合第一件事：WeaponAPI.pipeline()。它告诉你现在该做哪一步、下一步的确切命令。
+2. **特征自己收集**：自己上网查这把武器的公开资料，提炼特征清单（剪影要点 / 部件构成 / 配色 / 材质）。
+   有参考图也只**取图上的特征**，绝不逐像素对剪影。
+3. 先定 **名称 / 挂载数（单手·双手）/ 种类（刀·锤·枪·炮·盾·杖·链·箱）**。
+4. **动作复用同类型模板**：WeaponAPI.applyKindTemplate(kind)（套完还能手调 moves）。
+5. 用图元建本体：box / panel / geo（cylinder·sphere·cone·torus·ring）—— **别 new BoxGeometry 堆**，用 WeaponAPI.addPrimitive。
+   视口里能**点选 + gizmo 拖动/旋转/缩放 + 增删**；共享武器可 WeaponAPI.captureOriginal(id) **拆解**成可编辑图元。
+6. 每一步都要带证据。存库分「临时 / 正式」（save({confirmed})）。
+7. 共享武器库（黑刃 / 黑岩巨炮 / 葱）是**只读**参考；要改它就在 lp/weapons.js 改代码。
+
+常用命令：
+  WeaponAPI.pipeline() / mark(id,{evidence}) / reset()
+  WeaponAPI.setMeta({name,mount,kind}) / applyKindTemplate(kind?) / templateFor(kind)
+  WeaponAPI.addPrimitive(p) / setPrimitives([...]) / load(id) / save({confirmed})
+  WeaponAPI.select(i) / removePrimitive(i) / duplicatePrimitive(i) / mode('translate|rotate|scale')
+  WeaponAPI.captureOriginal(id)   ← 把共享武器拆成图元数组
+  WeaponAPI.list() / listOriginal() / get(id) / confirm(id) / remove(id)
+  WeaponAPI.kinds() / moves() / render() / snapshot() / setView(x,y,z)
+`;
+
+/* ============================================================ 预览 ---------- */
+function geoFor(p){
+  if (p.kind === 'box') return new THREE.BoxGeometry(p.w||.1, p.h||.1, p.d||.1);
+  if (p.kind === 'panel'){
+    const pts = p.points || [[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]];
+    const sh = new THREE.Shape(); pts.forEach((q,i)=> i ? sh.lineTo(q[0],q[1]) : sh.moveTo(q[0],q[1]));
+    sh.closePath();
+    return new THREE.ExtrudeGeometry(sh, { depth:p.depth||.03, bevelEnabled:false, steps:1, curveSegments:1 })
+      .translate(0,0,-(p.depth||.03)/2);
+  }
+  const s = p.shape || 'cylinder';
+  if (s === 'cylinder') return new THREE.CylinderGeometry(p.rTop??p.r??.05, p.rBot??p.r??.05, p.h||.3, p.seg||8, 1, !!p.open);
+  if (s === 'sphere')   return new THREE.SphereGeometry(p.r||.08, p.seg||10, p.seg2||8);
+  if (s === 'cone')     return new THREE.ConeGeometry(p.r||.08, p.h||.2, p.seg||8, 1, !!p.open);
+  if (s === 'torus')    return new THREE.TorusGeometry(p.r||.08, p.tube||.02, p.seg||6, p.seg2||12);
+  if (s === 'ring')     return new THREE.RingGeometry(p.rIn??.05, p.rOut??.1, p.seg||12, 1);
+  if (s === 'capsule')  return new THREE.CapsuleGeometry(p.r||.05, p.h||.2, 4, p.seg||8);
+  return new THREE.BoxGeometry(p.w||.1, p.h||.1, p.d||.1);
+}
+/** 自动把相机框到某件武器上（3/4 视角）—— 免得出现「加载了却看不见」 */
+function frameTo(obj){
+  const b = new THREE.Box3().setFromObject(obj);
+  if (b.isEmpty()) return;
+  const c = b.getCenter(new THREE.Vector3());
+  const r = Math.max(b.getSize(new THREE.Vector3()).length() * .5, .15);
+  const dist = r / Math.tan((camera.fov * Math.PI / 180) / 2) * 1.3;
+  controls.target.copy(c);
+  camera.position.copy(c).addScaledVector(new THREE.Vector3(.7, .55, 1).normalize(), dist);
+  camera.updateProjectionMatrix(); controls.update();
+}
+function rebuild(){
+  gizmo.detach();
+  if (weaponGroup){ scene.remove(weaponGroup); weaponGroup.traverse(o=>{ o.geometry?.dispose?.(); }); }
+  weaponGroup = new THREE.Group();
+  (W.draft.primitives || []).forEach((p, i) => {
+    const geo = geoFor(p);
+    const mat = new THREE.MeshStandardMaterial({ color:(p.color ?? 0x9aa3ad), roughness:.62, metalness:.15 });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(p.x||0, p.y||0, p.z||0);
+    m.rotation.set(p.rotX||0, p.rotY||0, p.rotZ||0);
+    m.scale.set(p.sclX??1, p.sclY??1, p.sclZ??1);
+    m.castShadow = m.receiveShadow = true; m.userData.pi = i;
+    weaponGroup.add(m);
+  });
+  scene.add(weaponGroup);
+  const g = W.draft.grip || [0,0,0];
+  gripMark.position.set(g[0]||0, g[1]||0, g[2]||0);
+  if (W.sel >= weaponGroup.children.length) W.sel = -1;
+  updatePrimList(); syncPrims();
+  if (W.sel >= 0) select(W.sel); else gizmo.detach();
+}
+/* ---- 选中 + gizmo 同步 ---- */
+function select(i){
+  W.sel = (i!=null && i>=0 && i<weaponGroup.children.length) ? i : -1;
+  updatePrimList();
+  weaponGroup.children.forEach((m,k)=>{
+    const on = k===W.sel;
+    if (m.material && m.material.emissive) m.material.emissive.setHex(on ? 0x2a4a6b : 0x000000);
+  });
+  if (W.sel>=0) gizmo.attach(weaponGroup.children[W.sel]); else gizmo.detach();
+}
+function onGizmoChange(){
+  const o = gizmo.object; if(!o) return;
+  const p = (W.draft.primitives||[])[o.userData.pi]; if(!p) return;
+  p.x=+o.position.x.toFixed(5); p.y=+o.position.y.toFixed(5); p.z=+o.position.z.toFixed(5);
+  p.rotX=+o.rotation.x.toFixed(5); p.rotY=+o.rotation.y.toFixed(5); p.rotZ=+o.rotation.z.toFixed(5);
+  p.sclX=+o.scale.x.toFixed(5); p.sclY=+o.scale.y.toFixed(5); p.sclZ=+o.scale.z.toFixed(5);
+  syncPrims();
+}
+function removePrim(i){ if(!(i>=0)) return; W.draft.primitives.splice(i,1); W.sel=-1; rebuild(); }
+function duplicatePrim(i){
+  const p = (W.draft.primitives||[])[i]; if(!p) return;
+  const c = JSON.parse(JSON.stringify(p)); c.x=+((c.x||0)+.06).toFixed(4);
+  W.draft.primitives.splice(i+1, 0, c); W.sel = i+1; rebuild();
+}
+function movePrim(i, d){
+  const a = W.draft.primitives||[]; const j = i+d; if(i<0 || j<0 || j>=a.length) return;
+  [a[i],a[j]]=[a[j],a[i]]; W.sel=j; rebuild();
+}
+/* ---- 视口点选 ---- */
+let downPt = null;
+renderer.domElement.addEventListener('pointerdown', e => { if(gizmo.dragging) return; downPt = { x:e.clientX, y:e.clientY }; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if(!downPt) return; const moved = Math.hypot(e.clientX-downPt.x, e.clientY-downPt.y); downPt = null;
+  if(moved > 4 || gizmo.dragging) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  const ndc = new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
+  const ray = new THREE.Raycaster(); ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects(weaponGroup ? weaponGroup.children : [], false);
+  select(hits.length ? hits[0].object.userData.pi : -1);
+});
+addEventListener('keydown', e => {
+  if(/input|textarea|select/i.test((e.target && e.target.tagName) || '')) return;
+  const k = e.key;
+  if(k==='w'||k==='W') gizmo.setMode('translate');
+  else if(k==='e'||k==='E') gizmo.setMode('rotate');
+  else if(k==='r'||k==='R') gizmo.setMode('scale');
+  else if(k==='Delete'||k==='Backspace') removePrim(W.sel);
+  else if(k==='Escape') select(-1);
+});
+
+/* ============================================================ 面板 ---------- */
+const scroll = document.getElementById('scroll');
+function section(title, hint, open, build){
+  const sec=document.createElement('section'); sec.className='sec'+(open?'':' collapsed');
+  const h=document.createElement('h2'); h.innerHTML=`${title}<span>${hint||''}</span>`;
+  h.onclick=()=>sec.classList.toggle('collapsed');
+  const b=document.createElement('div'); b.className='body';
+  sec.append(h,b); scroll.appendChild(sec); build(b); return b;
+}
+const row = (parent, label) => { const r=document.createElement('div'); r.className='row';
+  const l=document.createElement('label'); l.textContent=label; r.appendChild(l); parent.appendChild(r); return r; };
+const grid = (parent) => { const g=document.createElement('div'); g.className='grid'; parent.appendChild(g); return g; };
+const btn = (parent,label,on) => { const b=document.createElement('button'); b.textContent=label;
+  b.onclick=()=>on(b); parent.appendChild(b); return b; };
+
+/* ---- ★ 共享武器库（= 共享池本体；目录名沿用 OriginalWeaponList）---- */
+let origGrid = null;
+section('共享武器库', '共享武器 · OriginalWeaponList', true, b=>{
+  b.appendChild(Object.assign(document.createElement('div'), { className:'hint',
+    textContent:'共享武器（黑刃 / 黑岩巨炮 / 葱…）= **共享池**，任何角色都能装。点一个 → **拆解成可编辑图元**（几何以 lp/weapons.js 代码为准）。' }));
+  origGrid = grid(b);
+  btn(grid(b), '刷新', () => loadOriginals());
+  loadOriginals();
+});
+
+/* ---- 新增武器库 ---- */
+let listGrid = null;
+section('新增武器库', 'NewlyAddedWeaponList', true, b=>{
+  b.appendChild(Object.assign(document.createElement('div'), { className:'hint',
+    textContent:'自己/AI 新做的武器（正式 + 临时）。点一个载入编辑；「新建」= 空白武器。也进共享池。' }));
+  listGrid = grid(b);
+  const bar = document.createElement('div'); bar.className='grid';
+  btn(bar, '新建', () => { W.current=null; W.sel=-1; W.draft=newWeapon(); refreshAll(); frameTo(weaponGroup); toast('新建武器'); });
+  btn(bar, '刷新', () => loadList());
+  b.appendChild(bar);
+  loadList();
+});
+
+/* ---- ★ 武器建模流水线（轻量）---- */
+let wpBody = null;
+section('武器建模流水线', 'AI 生成武器 · 无体态', true, b=>{ wpBody = b; refreshWp(); });
+function refreshWp(){
+  if(!wpBody) return; wpBody.innerHTML='';
+  wpBody.appendChild(Object.assign(document.createElement('div'), { className:'hint',
+    textContent:'比人物流水线**轻**：没有体态要求；特征自己上网收集（或从参考图只取特征），动作复用同类型模板。' }));
+  const st = wpStatus();
+  const list = document.createElement('div');
+  list.style.cssText='border:1px solid var(--line);border-radius:4px;overflow:hidden';
+  for(const s of st.steps){
+    const d = document.createElement('div');
+    d.style.cssText='padding:5px 7px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--hairline);'+(s.isCurrent?'background:var(--hover);':'');
+    d.textContent = (s.status==='done'?'✓ ':(s.isCurrent?'▸ ':'· ')) + s.label + (s.status==='done'&&s.evidence?' — '+s.evidence:'');
+    d.title = s.command;
+    if(s.status!=='done') d.onclick = () => { const ev=prompt('标记「'+s.label+'」完成；证据：', s.evidence||''); if(ev===null) return;
+      const r=wpMark(s.id,{status:'done',evidence:ev||'(未填)'}); if(!r.ok) toast(r.error); };
+    list.appendChild(d);
+  }
+  wpBody.appendChild(list);
+  const g = document.createElement('div'); g.className='grid';
+  btn(g, '复制系统提示词', async()=>{ const p=WEAPON_SYSTEM_PROMPT;
+    try{ await navigator.clipboard.writeText(p); toast('武器系统提示词已复制 · '+p.length+' 字'); }
+    catch(e){ console.log(p); toast('剪贴板不可用 → 已打印到控制台'); } });
+  btn(g, '重置流水线', ()=>{ WP.state=wpNew(); wpSave(); refreshWp(); toast('流水线已重置'); });
+  wpBody.appendChild(g);
+}
+
+/* ---- 基本信息 ---- */
+section('基本信息', '挂载数 · 种类', true, b=>{
+  const rn = row(b,'名称'); const nameIn = document.createElement('input'); nameIn.type='text';
+  nameIn.oninput = () => { W.draft.name = nameIn.value; }; rn.appendChild(nameIn);
+  const rm = row(b,'挂载数'); const mSel = document.createElement('select');
+  for (const k of [1,2]) mSel.add(new Option(MOUNT_LABEL[k], k));
+  mSel.onchange = () => { W.draft.mount = +mSel.value; };
+  rm.appendChild(mSel);
+  const rk = row(b,'种类'); const kSel = document.createElement('select');
+  for (const k of KIND_KEYS) kSel.add(new Option(KIND_LABEL[k]||k, k));
+  kSel.onchange = () => { W.draft.kind = kSel.value;
+    if (!(W.draft.moves||[]).length) applyKindTemplate(kSel.value); };   // 动作还空着 → 自动套同类型模板
+  rk.appendChild(kSel);
+  const tgrid = document.createElement('div'); tgrid.className='grid';
+  btn(tgrid, '套用同类型动作模板', () => applyKindTemplate(W.draft.kind));
+  b.appendChild(tgrid);
+  const rg = row(b,'握把 x,y,z'); const gIn = document.createElement('input'); gIn.type='text';
+  gIn.onchange = () => { const v=gIn.value.split(',').map(Number); if(v.length===3 && v.every(n=>!isNaN(n))){ W.draft.grip=v; rebuild(); } };
+  rg.appendChild(gIn);
+  b._sync = () => { nameIn.value = W.draft.name||''; mSel.value = W.draft.mount||1; kSel.value = W.draft.kind||'blade';
+                    gIn.value = (W.draft.grip||[0,0,0]).join(', '); };
+});
+
+/* ---- 动作绑定 ---- */
+let moveBtns = [];
+section('动作绑定', '武器对应动作', true, b=>{
+  b.appendChild(Object.assign(document.createElement('div'), { className:'hint',
+    textContent:'从动作库里挑（lp/moves.js 的 ATTACKS）。可多选 —— 多选就是「换招」的几套。' }));
+  const g = grid(b);
+  moveBtns = Object.keys(LP.ATTACKS || {}).map(k => {
+    const def = LP.ATTACKS[k];
+    const bt = btn(g, (def.label||k), () => {
+      const set = new Set(W.draft.moves||[]);
+      set.has(k) ? set.delete(k) : set.add(k);
+      W.draft.moves = [...set]; syncMoves();
+    });
+    bt._k = k; return bt;
+  });
+  b._sync = syncMoves;
+  function syncMoves(){ const set=new Set(W.draft.moves||[]); moveBtns.forEach(x=>x.classList.toggle('on', set.has(x._k))); }
+});
+
+/* ---- ★ 武器本体（图元 / 代码）—— 可点选 · gizmo 拖动 · 增删 ---- */
+let primTa = null, primListEl = null;
+section('武器本体 · 图元 / 代码', '独立路线 · 可拖动', true, b=>{
+  b.appendChild(Object.assign(document.createElement('div'), { className:'hint',
+    textContent:'图元：box / panel / geo(cylinder·sphere·cone·torus·ring)。视口点选 → gizmo 拖动/旋转/缩放；下面能增删改，也可以直接编辑「模型代码」。' }));
+  const bar = document.createElement('div'); bar.className='grid';
+  btn(bar,'加方块', () => push({ kind:'box', x:0,y:.1,z:0, w:.08,h:.2,d:.08, color:0x9aa3ad }));
+  btn(bar,'加圆柱', () => push({ kind:'geo', shape:'cylinder', r:.05, h:.4, y:.2, seg:8, color:0x9aa3ad }));
+  btn(bar,'加片',   () => push({ kind:'panel', points:[[-.1,0],[.1,0],[.06,.5],[-.06,.5]], depth:.04, z:0, color:0x9aa3ad }));
+  btn(bar,'加球',   () => push({ kind:'geo', shape:'sphere', r:.07, y:.2, seg:10, color:0x9aa3ad }));
+  b.appendChild(bar);
+  primListEl = document.createElement('div'); primListEl.className='plist'; b.appendChild(primListEl);
+  const bar2 = document.createElement('div'); bar2.className='grid';
+  btn(bar2,'复制选中', () => duplicatePrim(W.sel));
+  btn(bar2,'删除选中', () => removePrim(W.sel));
+  btn(bar2,'上移', () => movePrim(W.sel,-1));
+  btn(bar2,'下移', () => movePrim(W.sel,+1));
+  b.appendChild(bar2);
+  const lab = document.createElement('div'); lab.className='hint'; lab.textContent='模型代码（图元数组）'; b.appendChild(lab);
+  primTa = document.createElement('textarea'); primTa.spellcheck = false; b.appendChild(primTa);
+  const bar3 = document.createElement('div'); bar3.className='grid';
+  btn(bar3,'应用代码', () => {
+    try { W.draft.primitives = JSON.parse(primTa.value); W.sel=-1; rebuild(); toast('已应用 '+W.draft.primitives.length+' 个图元'); }
+    catch(e){ toast('JSON 解析失败：'+e.message); }
+  });
+  btn(bar3,'居中视图', () => frameTo(weaponGroup));
+  b.appendChild(bar3);
+  b._sync = syncPrims;
+  function push(p){ W.draft.primitives = [...(W.draft.primitives||[]), p]; W.sel = W.draft.primitives.length-1; rebuild(); }
+});
+function updatePrimList(){
+  if(!primListEl) return;
+  primListEl.innerHTML='';
+  const prims = W.draft.primitives || [];
+  if(!prims.length){ primListEl.appendChild(Object.assign(document.createElement('div'), { className:'prow', textContent:'（空 · 上面加一个图元）' })); return; }
+  prims.forEach((p,i)=>{
+    const d = document.createElement('div'); d.className='prow'+(i===W.sel?' on':'');
+    const col = p.color!=null ? ('  #'+(p.color>>>0).toString(16).padStart(6,'0')) : '';
+    d.textContent = (i===W.sel?'▸ ':'') + i + ' · ' + (p.kind==='geo' ? ('geo/'+(p.shape||'?')) : p.kind) + col;
+    d.onclick = () => select(i);
+    primListEl.appendChild(d);
+  });
+}
+function syncPrims(){ if(primTa) primTa.value = JSON.stringify(W.draft.primitives||[], null, 1); }
+
+/* ---- 保存 ---- */
+section('保存', 'NewlyAddedWeaponList', true, b=>{
+  const g = grid(b);
+  btn(g,'存为临时', () => save(false));
+  btn(g,'存并确认', () => save(true));
+  const g2 = grid(b);
+  btn(g2,'确认当前', () => W.current && Store.confirmWeapon(W.current).then(()=>loadList()).then(()=>toast('已确认')));
+  btn(g2,'删除当前', () => W.current && Store.removeWeapon(W.current).then(()=>{ W.current=null; W.sel=-1; W.draft=newWeapon(); refreshAll(); loadList(); toast('已删除'); }));
+  b.appendChild(Object.assign(document.createElement('div'), { className:'hint',
+    textContent:'id 没填会自动从名字生成；同名会覆盖。' }));
+});
+
+function refreshAll(){
+  for (const sec of scroll.querySelectorAll('.sec .body')) if (sec._sync) sec._sync();
+  syncPrims(); syncMoves(); rebuild();
+}
+function syncMoves(){ const set=new Set(W.draft.moves||[]); moveBtns.forEach(x=>x.classList.toggle('on', set.has(x._k))); }
+/** ★ 套用「同类型武器」的默认动作模板（复用模板；之后还能手调） */
+function applyKindTemplate(kind){
+  const keys = (LP.weaponKindMoves ? LP.weaponKindMoves(kind) : ['horizontalSlash']).slice();
+  W.draft.moves = keys; syncMoves();
+  toast('已套用「'+(KIND_LABEL[kind]||kind)+'」动作模板：'+keys.map(k=>(LP.ATTACKS[k]||{}).label||k).join(' / '));
+  return keys;
+}
+
+/* ============================================================ 拆解：运行时武器 → 图元 ----
+ * 钩 `LP.Builder.box/shape/add` 跑一遍 `def.build()`，把作者级图元（box/panel/geo）原样记下。
+ * 「直接 add 的几何」（圆柱/圆环…）靠钩 `BufferGeometry` 的 translate/rotate/scale 还原**净变换**。 */
+function captureWeaponPrimitives(id){
+  const def = LP.WEAPONS[id]; if(!def) return null;
+  const B = LP.Builder; if(!B) return null;
+  const prims = []; let inBS = false;
+  const num = v => (typeof v==='number' ? +v.toFixed(5) : v);
+  const OP = new WeakMap(); const acc = g => { let m=OP.get(g); if(!m){ m=new THREE.Matrix4(); OP.set(g,m); } return m; };
+  const P = THREE.BufferGeometry.prototype;
+  /* ★ 只钩 `applyMatrix4` —— three 的 translate / rotateX/Y/Z / scale **内部都走 applyMatrix4**，
+     同时钩它们 + applyMatrix4 会把同一个变换记两遍（实测会把位移/旋转翻倍）。 */
+  const oMul = P.applyMatrix4;
+  P.applyMatrix4 = function(m){ acc(this).premultiply(m); return oMul.apply(this,[m]); };
+  const oBox=B.prototype.box, oShape=B.prototype.shape, oAdd=B.prototype.add;
+  B.prototype.box = function(x,y,z,w,h,d,color,rotZ=0){ inBS=true;
+    prims.push({ kind:'box', x:num(x),y:num(y),z:num(z), w:num(w),h:num(h),d:num(d), color, rotZ:num(rotZ) });
+    const r=oBox.apply(this,arguments); inBS=false; return r; };
+  B.prototype.shape = function(points,z,depth,color,ox=0,oy=0,rotX=0,rotY=0){ inBS=true;
+    prims.push({ kind:'panel', points:JSON.parse(JSON.stringify(points)), depth:num(depth), color,
+      x:num(ox), y:num(oy), z:num(z), rotX:num(rotX), rotY:num(rotY) });
+    const r=oShape.apply(this,arguments); inBS=false; return r; };
+  B.prototype.add = function(geo,color){ if(!inBS && geo && geo.isBufferGeometry){ const it=geoPrimitive(geo, OP.get(geo), color); if(it) prims.push(it); }
+    return oAdd.apply(this,[geo,color]); };
+  try { const b = new B(); def.build(b, -1); }
+  catch(e){ console.warn('[weapon capture] '+id+' failed:', e); toast('拆解失败：'+e.message); }
+  finally { B.prototype.box=oBox; B.prototype.shape=oShape; B.prototype.add=oAdd; P.applyMatrix4=oMul; }
+  return prims;
+}
+const num5 = v => (typeof v==='number' ? +v.toFixed(5) : v);
+function geoPrimitive(geo, m, color){
+  const t = geo.type, P = geo.parameters || {};
+  const pos=new THREE.Vector3(), quat=new THREE.Quaternion(), scl=new THREE.Vector3();
+  (m || new THREE.Matrix4()).decompose(pos, quat, scl);
+  const e = new THREE.Euler().setFromQuaternion(quat, 'XYZ');
+  const base = { x:num5(pos.x), y:num5(pos.y), z:num5(pos.z),
+    rotX:num5(e.x), rotY:num5(e.y), rotZ:num5(e.z), color };
+  if(t==='BoxGeometry')       return { kind:'box', w:num5(P.width), h:num5(P.height), d:num5(P.depth), ...base };
+  if(t==='CylinderGeometry')  return { kind:'geo', shape:'cylinder', rTop:num5(P.radiusTop), rBot:num5(P.radiusBottom), h:num5(P.height), seg:P.radialSegments, open:!!P.openEnded, ...base };
+  if(t==='SphereGeometry')    return { kind:'geo', shape:'sphere', r:num5(P.radius), seg:P.widthSegments, seg2:P.heightSegments, ...base };
+  if(t==='ConeGeometry')      return { kind:'geo', shape:'cone', r:num5(P.radius), h:num5(P.height), seg:P.radialSegments, open:!!P.openEnded, ...base };
+  if(t==='TorusGeometry')     return { kind:'geo', shape:'torus', r:num5(P.radius), tube:num5(P.tube), seg:P.radialSegments, seg2:P.tubularSegments, ...base };
+  if(t==='RingGeometry')      return { kind:'geo', shape:'ring', rIn:num5(P.innerRadius), rOut:num5(P.outerRadius), seg:P.thetaSegments, ...base };
+  if(scl.x!==1||scl.y!==1||scl.z!==1){ base.sclX=num5(scl.x); base.sclY=num5(scl.y); base.sclZ=num5(scl.z); }
+  return null;   // 认不出的几何：略过（避免塞一堆裸网格）
+}
+
+/* ============================================================ 读写 ---------- */
+async function loadList(){
+  try { const r = await Store.listWeapons(); W.list = [...(r.confirmed||[]), ...(r.temporary||[])]; }
+  catch(e){ W.list = []; toast('读不到武器列表（服务起了吗？）'); }
+  if (!listGrid) return;
+  listGrid.innerHTML = '';
+  for (const w of W.list){
+    const b = btn(listGrid, (w.name||w.id) + (w.where==='待确认'?' ?':''), async () => {
+      const rec = await Store.getWeapon(w.id);
+      W.current = rec.id; W.sel=-1;
+      W.draft = { ...rec, primitives: (rec.spec && rec.spec.parts ? rec.spec.parts[0].primitives : rec.primitives) || [] };
+      refreshAll(); frameTo(weaponGroup); toast('已载入 ' + (rec.name||rec.id));
+    });
+    b._id = w.id;
+  }
+}
+/* ---- 共享武器库：点一个 → 拆解成可编辑图元（落盘的 primitives 优先，否则现场拆） ---- */
+async function loadOriginals(){
+  let list = [];
+  try { const r = await Store.listOriginalWeapons(); list = r.confirmed || []; }
+  catch(e){ toast('读不到共享武器库（服务起了吗？）'); }
+  W.originals = list;
+  if (!origGrid) return;
+  origGrid.innerHTML = '';
+  for (const w of list){
+    const b = btn(origGrid, (w.name||w.id) + (w.kind ? ' · '+(KIND_LABEL[w.kind]||w.kind) : ''), () => showOriginal(w));
+    b._id = w.id;
+  }
+}
+async function showOriginal(w, { asCopy = true } = {}){
+  let prims = null;
+  try { const rec = await Store.getOriginalWeapon(w.id); prims = (rec && rec.primitives) || null; } catch(e){}
+  if((!prims || !prims.length) && w.runtime){
+    prims = captureWeaponPrimitives(w.runtimeId || w.id);
+  }
+  W.current = null; W.sel = -1;
+  W.draft = { id:'', name: asCopy ? ((w.name||w.id)+'-副本') : (w.name||w.id), mount:w.mount||1, kind:w.kind||'blade',
+              moves:(w.moves||[]).slice(), grip:w.grip||[0,0,0], hold:w.hold||null,
+              features:(w.note||''), primitives: prims || [] };
+  refreshAll();
+  if (prims && prims.length){ frameTo(weaponGroup); toast('已拆解为 '+prims.length+' 个可编辑图元（可拖动/增删）'); }
+  else if (w.runtime){ previewRuntime(w.runtimeId || w.id, w.grip); toast('共享武器 · '+w.name+'（未能拆解，只读预览）'); }
+  else toast('共享武器 · '+w.name);
+}
+/** ★ 启动时默认显示「葱」（共享武器库里的 leek）—— 而不是空白方块 */
+async function loadDefaultWeapon(){
+  try{
+    const r = await Store.listOriginalWeapons();
+    const list = (r && (r.confirmed || r)) || [];
+    const leek = list.find(w => w.id === 'leek') || list[0];
+    if (leek) await showOriginal(leek, { asCopy:false });
+  }catch(e){ /* 服务没起来 → 退回默认方块 */ }
+}
+/* 兜底：拆不出来时，直接调运行时 build() 出只读预览 */
+function previewRuntime(id, grip){
+  const def = LP.WEAPONS[id]; if(!def){ toast('运行时没有 '+id); return; }
+  gizmo.detach();
+  if (weaponGroup){ scene.remove(weaponGroup); weaponGroup.traverse(o=>{ o.geometry?.dispose?.(); }); }
+  const grp = new THREE.Group(), inner = new THREE.Group();
+  const b = new LP.Builder(); def.build(b, -1);
+  b.build(inner, new THREE.MeshStandardMaterial({ vertexColors:true, roughness:.62, metalness:.2 }));
+  grp.add(inner);
+  const g = grip || LP.HAND || [0,0,0];
+  grp.position.set(-g[0], -g[1], -g[2]);
+  weaponGroup = grp; scene.add(grp);
+  gripMark.position.set(0,0,0);
+  frameTo(grp);
+}
+
+async function save(confirmed){
+  const d = W.draft;
+  const id = (d.id || d.name || 'weapon').replace(/[^\w\u4e00-\u9fa5.\-]/g,'_').slice(0,64);
+  const spec = { schema:'lowpoly-workshop/weapon@1', id, name:d.name,
+    parts: [ { id:'weapon', name:'武器本体', category:'武器', parent:null, primitives:d.primitives||[] } ] };
+  try {
+    await Store.saveWeapon({ id, name:d.name, spec, dir: confirmed?'confirmed':'temporary',
+      mount:d.mount, kind:d.kind, moves:d.moves, grip:d.grip, hold:d.hold, note:d.features||'' });
+    W.current = id; W.draft.id = id;
+    await loadList(); toast(confirmed ? '已保存并确认' : '已存为临时');
+  } catch(e){ toast('保存失败：'+e.message); }
+}
+
+/* ============================================================ AI 接口 -------- */
+window.WeaponAPI = {
+  state: () => ({ current: W.current, sel: W.sel, draft: W.draft, list: W.list.map(w=>({id:w.id,name:w.name,where:w.where})) }),
+  /* ★ 武器建模流水线（轻量 · 无体态 · 无门） */
+  pipeline: () => wpStatus(),
+  mark: (id, opts={}) => wpMark(id, opts),
+  reset: () => { WP.state = wpNew(); wpSave(); refreshWp(); return wpStatus(); },
+  systemPrompt: () => ({ ok:true, docs:'docs/weapon-files.md · 武器建模流水线', prompt: WEAPON_SYSTEM_PROMPT }),
+  /* ★ 特征 / 同类型动作模板 */
+  features: (text) => { W.draft.features = String(text||''); return W.draft.features; },
+  templateFor: (kind) => (LP.weaponKindMoves ? LP.weaponKindMoves(kind) : ['horizontalSlash']),
+  applyKindTemplate: (kind) => applyKindTemplate(kind || W.draft.kind),
+  /* ★ 拆解共享武器 → 图元数组（不落盘，纯计算） */
+  captureOriginal: (id) => captureWeaponPrimitives(id),
+  list: () => Store.listWeapons(),
+  /* ★ 共享武器库（共享池本体）：黑刃 / 黑岩巨炮 / 葱 … */
+  listOriginal: () => Store.listOriginalWeapons(),
+  original: (id) => Store.getOriginalWeapon(id),
+  get: (id) => Store.getWeapon(id),
+  load: async (id) => { const rec = await Store.getWeapon(id); W.current = rec.id; W.sel=-1;
+    W.draft = { ...rec, primitives:(rec.spec&&rec.spec.parts?rec.spec.parts[0].primitives:rec.primitives)||[] };
+    refreshAll(); return W.draft; },
+  setPrimitives: (prims) => { W.draft.primitives = prims; W.sel=-1; refreshAll(); return prims; },
+  addPrimitive: (p) => { W.draft.primitives = [...(W.draft.primitives||[]), p]; refreshAll(); return p; },
+  select: (i) => { select(i); return W.sel; },
+  mode: (m) => { gizmo.setMode(m); return m; },     // translate | rotate | scale
+  removePrimitive: (i) => { removePrim(i==null?W.sel:i); return W.draft.primitives.length; },
+  duplicatePrimitive: (i) => { duplicatePrim(i==null?W.sel:i); return W.draft.primitives.length; },
+  setMeta: (patch) => { Object.assign(W.draft, patch); refreshAll(); return W.draft; },
+  setMoves: (keys) => { W.draft.moves = keys; syncMoves(); return keys; },
+  save: async (opts={}) => { await save(!!opts.confirmed); return W.current; },
+  confirm: (id) => Store.confirmWeapon(id || W.current),
+  remove: (id) => Store.removeWeapon(id || W.current),
+  snapshot: () => { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); },
+  render: () => { renderer.render(scene, camera); return true; },
+  setView: (x,y,z) => { camera.position.set(x,y,z); controls.update(); },
+  frame: () => { frameTo(weaponGroup); return true; },
+  kinds: () => Object.fromEntries(KIND_KEYS.map(k=>[k, KIND_LABEL[k]||k])),
+  moves: () => Object.fromEntries(Object.entries(LP.ATTACKS||{}).map(([k,v])=>[k, v.label||k])),
+  scene, THREE, camera, renderer, gizmo,
+};
+
+/* ============================================================ 启动 ---------- */
+rebuild();
+frameTo(weaponGroup);
+loadDefaultWeapon();     // ★ 默认显示「葱」（没有则退回上面的空白方块）
+addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); });
+(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene,camera); })();
+</script>
+</body>
+</html>

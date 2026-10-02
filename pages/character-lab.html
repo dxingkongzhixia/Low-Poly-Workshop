@@ -26,6 +26,7 @@
     padding:7px 6px;font-size:12px;cursor:pointer;transition:.15s}
   .grid button:hover{background:var(--hover);border-color:var(--accent)}
   .grid button.on{background:var(--ok-bg2);border-color:var(--ok-line);color:var(--ok-ink)}
+  .grid button.off{opacity:.32}
   .row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
   .row label{color:var(--dim)}
   .row .val{color:var(--ink);font-variant-numeric:tabular-nums;font-size:11px;min-width:34px;text-align:right}
@@ -67,8 +68,8 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
   }
 }
 </script>
@@ -80,8 +81,39 @@ import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { XT, KT, AT, It, Bt, Q } from '../src/characters.orig.js';
 import { attachFace } from '../src/characters.face.js';
 import { Store, gpuInfo, gpuAdvice } from '../src/characters.store.js';
-import { initHires, buildHires, HIRES_VARIANTS, ek, NE, HIRES_PALETTES } from '../src/characters.hires2.js';
+import * as LP from '../src/characters.lowpoly.js';   // ★ 我们的运行时：移动状态机 + 活动 + 武器池
+/* ★ 高模模块（characters.hires2.js，~840KB）**不再静态 import**，也不在首屏就 import ——
+   等首屏渲染完再按需加载，避免拖慢加载。首屏先用空表（只是少个 ★ 标记）。 */
+let HIRES = null, hiresPromise = null;
+const HIRES_VARIANTS = Object.create(null);
+const HIRES_PALETTES = Object.create(null);
+function loadHires(){
+  if (hiresPromise) return hiresPromise;
+  hiresPromise = import('../src/characters.hires2.js').then((m) => {
+    HIRES = m;
+    Object.assign(HIRES_VARIANTS, m.HIRES_VARIANTS || {});
+    Object.assign(HIRES_PALETTES, m.HIRES_PALETTES || {});
+    try { publishCharacters(); } catch (e) {}          // 函数声明会提升
+    try { refreshHiresMarks(); } catch (e) {}          // 补上 ★ / 变体
+    return m;
+  }).catch((e) => { console.warn('高模模块加载失败（低模不受影响）：', e); return null; });
+  return hiresPromise;
+}
+const initHires  = (...a) => loadHires().then(() => HIRES.initHires(...a));
+const buildHires = (...a) => { if (!HIRES) throw new Error('高模模块还没加载完'); return HIRES.buildHires(...a); };
+const ek = (...a) => HIRES.ek(...a);
+const NE = (...a) => HIRES.NE(...a);
 let hiresReady = false;
+/** 高模模块到位后：把「原始模型」按钮补 ★、刷新变体下拉 */
+function refreshHiresMarks(){
+  const cn = new Map(ROSTER);
+  for (const b of opButtons) {
+    const id = b.dataset.id;
+    b.textContent = (cn.get(id) || id) + (HIRES_VARIANTS[id] ? ' ★' : '');
+    if (HIRES_VARIANTS[id]) b.title = '含高模：' + HIRES_VARIANTS[id].join(' / ');
+  }
+  if (typeof refreshVariantSelect === 'function') refreshVariantSelect();
+}
 
 /* ------------------------------------------------------------------ 名单 */
 const ROSTER = [
@@ -110,18 +142,28 @@ const AT0 = JSON.parse(JSON.stringify(AT));
  *     new Function('THREE','Q','XT','attachFace', src + '; return build_xxx;')
  * ========================================================================== */
 const NEW = { list: [], factories: {}, error: null, inited: false };
+/* ★ 磁盘上的模型如果**同一个 id 也是我们的程序化角色**（miku / brs），就用运行时本体构建
+   （全质量：圆角盒 + 手绘脸 + 武器），而不是用 model.js 那个小解释器。 */
+const runtimeChar = (id) => (LP.CHARACTERS && LP.CHARACTERS[id]) || null;
 async function loadNewList(){
   try{
     const r = await Store.listModels();
     NEW.list = [ ...(r.confirmed||[]).map(m=>({ ...m, where:'已确认' })),
                  ...(r.temporary||[]).map(m=>({ ...m, where:'待确认' })) ];
+    for (const m of NEW.list) m.runtime = !!runtimeChar(m.id);
     NEW.error = null;
-  }catch(e){ NEW.list = []; NEW.error = '读不到模型列表（tools/_serve.js 起来了吗？）：'+(e.message||e); }
+  }catch(e){ NEW.list = []; NEW.error = '读不到磁盘上的模型列表（tools/_serve.js 起来了吗？）：'+(e.message||e); }
   NEW.inited = true;
   return NEW.list;
 }
 async function loadNewFactory(id){
   if(NEW.factories[id]) return NEW.factories[id];
+  /* ★ 程序化角色：直接跑我们的运行时本体（返回完整骨骼引用），不用 model.js 小解释器 */
+  if(runtimeChar(id)){
+    const fn = () => LP.buildCharacter(id).proto;
+    NEW.factories[id] = fn;
+    return fn;
+  }
   const r = await Store.getModel(id);
   if(!r || !r.spec) throw new Error('模型数据为空');
   if(!r.js) throw new Error('这个模型只存了规格（spec），没有 model.js 工厂 —— 存的时候别关 withJs');
@@ -178,7 +220,8 @@ async function publishCharacters(){
     });
   }catch(e){ /* 服务端没起就算了，不影响页面 */ }
 }
-publishCharacters();
+/* publishCharacters() 现在由高模模块加载完成后触发（见顶部 hiresLoaded.then），
+   不再卡在首屏 —— 它要动态 import 高模模块、还要发 /api/characters。 */
 
 const P = {
   id: 'texas',
@@ -278,7 +321,9 @@ function addRing(root){
     new THREE.MeshBasicMaterial({color:0x4fe07a, transparent:true, opacity:0.16, side:THREE.DoubleSide}));
   r2.rotation.x = -Math.PI/2; r2.position.y = 0.011;
   ringGroup.add(r1, r2);
-  root.add(ringGroup);
+  /* ★ 挂到**场景**而不是角色 root：`poseCharacter()` 会用膝部把整只角色往上顶（接地钳制），
+     如果光圈是 root 的子节点，就会跟着一起被顶到脚踝高度 —— 黑岩（脚在原点下方）就中招了。 */
+  scene.add(ringGroup);
 }
 
 /* 高模：按“名字”重新定位语义部件（clone 后 uuid 会变，name 不变） */
@@ -318,6 +363,16 @@ function buildCharacter(){
       const raw = fn();
       const m = adapt(raw);
       m.newModel = true;
+      /* ★ 程序化角色（初音未来 / 黑岩射手）：接我们的**运行时**（状态机 + 武器池），和原作 14 人一样 */
+      const inst = runtimeChar(rec.id);
+      if(inst){
+        m.runtime = true;
+        m.spec = m.spec || inst;
+        /* ★ 角色自带的武器（黑岩：黑岩巨炮 + 黑刃）**绑定进「角色武器池」**（不是共享池） */
+        const bind = (inst.defaultLoadout ? inst.defaultLoadout() : []).slice();
+        m.weaponRig = LP.mountWeapons(m, [], { startNative: true, bind });
+        m.weaponRig.setArmed(RT.state.combat, RT.state.activity);
+      }
       m.root.scale.setScalar(P.scale);
       scene.add(m.root);
       parts = m;
@@ -326,6 +381,7 @@ function buildCharacter(){
       addRing(m.root);
       updateStats();
       renderPalettePanel();
+      RT.buildPool && RT.buildPool();
       toast('已载入新增模型 · ' + rec.name);
     }).catch(e=>{
       if(token !== buildToken) return;
@@ -359,13 +415,23 @@ function buildCharacter(){
     return;
   }
 
-  const m = adapt(XT(P.id));
-  m.root.scale.setScalar(It(P.id) * P.scale);
+  /* ★ 已程序化移植的角色走 PORTS（我们的 Builder）；其余暂走原作 XT(id) */
+  const ported = LP.PORTS && LP.PORTS[P.id];
+  const m = adapt(ported ? LP.buildFromPort(ported) : XT(P.id));
+  /* 移植版自带 rootScale（原 It(id) 的值）；没移植的仍走原作 It(id) */
+  m.root.scale.setScalar((ported && ported.rootScale ? ported.rootScale : It(P.id)) * P.scale);
   scene.add(m.root);
   parts = m;
+  /* ★ 接上我们的运行时：移动状态机 + 武器池（原作默认空手，原生武器在 XT 里） */
+  m.spec = { id: P.id, name: NAME[P.id] || P.id };
+  m.baseY = m.root.position.y;
+  m.weaponRig = LP.mountWeapons(m, [], { startNative: true });   // 原生武器取自模型本身（见 nativeList）
+  m.weaponRig.setArmed(RT.state.combat, '');
   addRing(m.root);
   updateStats();
   renderPalettePanel();
+  RT.syncW && RT.syncW();
+  RT.buildPool && RT.buildPool();
 }
 
 function disposeGroup(g){
@@ -387,7 +453,7 @@ function updateStats(msg){
     meshes++;
     const g=o.geometry; tris += (g.index? g.index.count : g.attributes.position.count)/3;
   }});
-  const kind = parts.hires ? '高模（立绘）' : (parts.newModel ? '新增模型' : '低模 XT');
+  const kind = parts.hires ? '高模（立绘）' : (parts.newModel ? '新增模型' : (parts.ported ? '低模（程序化）' : '低模 XT'));
   box.innerHTML =
     `<b>${label}</b> · ${sub}<br>${kind} · 三角面 ≈ ${Math.round(tris).toLocaleString()} · 网格 ${meshes}`;
 }
@@ -485,19 +551,19 @@ function refreshVariantSelect(){
   variantSelect.innerHTML='';
   for(const v of variants){ const o=document.createElement('option'); o.value=v; o.textContent=v; if(P.hiresVariant===v) o.selected=true; variantSelect.appendChild(o); }
 }
-section('干员', '原作 14 人', true, b=>{
+section('原始模型', '原作 14 人', true, b=>{
   const g=document.createElement('div'); g.className='grid';
   for(const [id,cn] of ROSTER){
     const btn=document.createElement('button'); btn.textContent=cn + (HIRES_VARIANTS[id]?' ★':''); btn.dataset.id=id;
     if(HIRES_VARIANTS[id]) btn.title = '含高模：'+HIRES_VARIANTS[id].join(' / ');
-    btn.onclick=()=>{ P.id=id; markOps(); refreshVariantSelect();
+    btn.onclick=()=>{ P.id=id; if(P.model==='new') P.model='low'; markOps(); refreshVariantSelect();
       if(P.model==='high' && !HIRES_VARIANTS[id]) P.model='low';
-      buildCharacter(); renderPalettePanel(true); toast('已载入 · '+cn); };
+      buildCharacter(); renderPalettePanel(true); markNew(); toast('已载入 · '+cn); };
     g.appendChild(btn); opButtons.push(btn);
   }
   b.appendChild(g);
 });
-function markOps(){ opButtons.forEach(x=>x.classList.toggle('on', x.dataset.id===P.id)); }
+function markOps(){ opButtons.forEach(x=>x.classList.toggle('on', x.dataset.id===P.id && P.model!=='new')); }
 
 /* ---- ★ 新增模型（独立分区：和上面 14 个原作角色**分开**，不混在一起 ---- */
 let newButtons=[], newBody=null;
@@ -506,9 +572,10 @@ function renderNewList(){
   if(!newBody) return;
   const b=newBody; b.innerHTML='';
   const info=document.createElement('div'); info.style.cssText='font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:6px';
-  if(NEW.error){ info.innerHTML='<span style="color:var(--warn-ink2)">'+NEW.error+'</span>'; b.appendChild(info); return; }
-  info.innerHTML = `存在 <code>NewlyAddedModelList/</code>（已确认）和 <code>NewlyAddedModelTemporaryList/</code>（待确认）。`
-    + `<br>共 <b>${NEW.list.length}</b> 个 —— 这些是**用户/AI 新做的**，不会混进上面 14 个原作角色。`;
+  if(NEW.error){ info.innerHTML='<span style="color:var(--warn-ink2)">'+NEW.error+'</span>'; }
+  else info.innerHTML = `存在 <code>NewlyAddedModelList/</code>（已确认）和 <code>NewlyAddedModelTemporaryList/</code>（待确认）。`
+    + `<br>共 <b>${NEW.list.length}</b> 个 —— 这些是**用户/AI 新做的**，不会混进上面 14 个原作角色。`
+    + `<br>其中 ${NEW.list.filter(m=>m.runtime).length} 个是<b>程序化运行时</b>角色（走状态机 + 武器池），用运行时**本体**构建（全质量）。`;
   b.appendChild(info);
   const g=document.createElement('div'); g.className='grid'; newButtons=[];
   if(!NEW.list.length){
@@ -760,22 +827,138 @@ let toastTimer=null;
 function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('on');
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('on'),1500); }
 
+/* ============================================================================
+ * ★ 自定义运行时（我们的模式）—— 原作 14 人也走这套：
+ *   移动状态机（走路/跑/下蹲/腾空） + 活动 12 + 武器池（装/卸/换招/攻击）
+ * 由 characters.lowpoly.js 的 poseCharacter() 驱动；原版模型默认**空手**（原生武器在 XT 里）。
+ * ========================================================================== */
+const RT = { state: { moving: false, running: false, crouch: false, air: false,
+                      activity: '', combat: true, attackT: null, attackDuration: 0 } };
+function mountRuntimePanel() {
+  const scroll = document.getElementById('scroll');
+  if (!scroll || document.getElementById('rtSec')) return;
+  const sec = document.createElement('div'); sec.className = 'sec'; sec.id = 'rtSec';
+  sec.innerHTML = '<h2>运行时 · 移动 / 活动 / 武器池</h2>';
+  sec.querySelector('h2').onclick = () => sec.classList.toggle('collapsed');   // ★ 点标题收起 / 展开
+  const body = document.createElement('div'); body.className = 'body'; sec.appendChild(body);
+  /* ★ 顺序：**原始模型 · 新增模型 · 运行时**（运行时插在「新增模型」下面、「比例/动作」上面） */
+  const anchor = [...scroll.querySelectorAll('.sec')].find((s) => /新增模型/.test((s.querySelector('h2') || {}).textContent || ''))
+              || [...scroll.querySelectorAll('.sec')].find((s) => /原始模型/.test((s.querySelector('h2') || {}).textContent || ''));
+  if (anchor) anchor.after(sec); else scroll.insertBefore(sec, scroll.firstChild);
+  const row = (label) => { const r = document.createElement('div'); r.className = 'row';
+    const l = document.createElement('label'); l.textContent = label; r.appendChild(l); body.appendChild(r); return r; };
+  const grid = () => { const g = document.createElement('div'); g.className = 'grid'; body.appendChild(g); return g; };
+  const btn = (parent, label, on) => { const b = document.createElement('button'); b.textContent = label;
+    b.onclick = () => on(b); parent.appendChild(b); return b; };
+
+  row('移动 · 状态机');  const tg = grid();
+  const tog = (label, key) => { const b = btn(tg, label, () => {
+      RT.state[key] = !RT.state[key];
+      if (key === 'running' && RT.state.running) RT.state.moving = true;
+      if (key === 'moving' && !RT.state.moving) RT.state.running = false;
+      sync();
+    }); b._k = key; return b; };
+  const tW = tog('走路', 'moving'), tR = tog('跑', 'running'), tC = tog('下蹲', 'crouch'), tA = tog('腾空', 'air');
+  btn(tg, '重置视角', () => { controls.target.set(0, 0.95, 0); camera.position.set(1.4, 1.6, 5.0); controls.update(); });
+
+  row('活动 · 12');
+  const ag = grid();
+  const acts = LP.ACTIVITIES.map((a) => btn(ag, a.label, () => {
+    RT.state.activity = RT.state.activity === a.id ? '' : a.id; syncActs(); }));
+  acts.forEach((b, i) => (b._id = LP.ACTIVITIES[i].id));
+  function syncActs() { acts.forEach((b) => b.classList.toggle('on', b._id === RT.state.activity)); }
+  syncActs();
+
+  row('武器池');
+  const wgTop = grid();                                     // 固定：持械 / 原生装备
+  const bArm = btn(wgTop, '持械', () => { RT.state.combat = !RT.state.combat; sync(); });   // ① 持械
+  btn(wgTop, '原生装备', () => { parts && parts.weaponRig && (parts.weaponRig.native(), syncW()); });  // ② 原生装备
+
+  row('角色武器池 · 本角色自带');                            // ★ 池 A：角色模型里分割出的原生武器
+  const wgNative = grid();                                  // ★ 换角色时重建
+  row('共享池 · 黑刃 / 黑岩巨炮');                          // ★ 池 B：全局共享（与池 A **互斥**）
+  const wgShared = grid();
+
+  const wgBot = grid();                                     // 固定：清空 / 换招 / 攻击
+  btn(wgBot, '清空', () => { parts && parts.weaponRig && (parts.weaponRig.clear(), syncW()); });
+  const bMove = btn(wgBot, '换招', () => { const rig = parts && parts.weaponRig; if (!rig) return;
+    rig.move = (rig.move + 1) % Math.max(1, rig.moveCount()); syncW(); });
+  const bAtk = btn(wgBot, '攻击', () => { const rig = parts && parts.weaponRig; if (!rig) return;
+    RT.state.attackT = 0; RT.state.attackDuration = rig.attackDuration(); });
+
+  const wb = {};
+  const handsTag = (h) => (h === 2 ? '双手' : '单手');
+  /** ★ 按当前角色重建两个池：A=本角色原生武器，B=共享（黑刃/巨炮） */
+  function buildPool() {
+    wgNative.innerHTML = ''; wgShared.innerHTML = ''; for (const k in wb) delete wb[k];
+    const rig = parts && parts.weaponRig;
+    /* A：角色武器池（模型里分割出的原生武器）—— 用**下标**当 key（同名武器不能用 name） */
+    if (rig && rig.nativeList) rig.nativeList.forEach((n, i) =>
+      wb['n' + i] = btn(wgNative, (n.label || n.name) + ' · ' + handsTag(n.hands),
+        () => { rig.toggleNative(n); syncW(); }));
+    /* B：共享池（我们的两把，任何角色都能装） */
+    for (const id of ['blackBlade', 'rockCannon', 'leek']) {
+      const def = LP.WEAPONS[id];
+      wb[id] = btn(wgShared, (def.label || id) + ' · ' + handsTag(def.hands || 1), () => {
+        const r = parts && parts.weaponRig; if (!r) return;
+        if (r.entries.some((e) => e.spec.id === id)) r.unequip(id); else r.equip(id); syncW();
+      });
+    }
+    if (rig && !rig.nativeList.length) btn(wgNative, '（本角色没有原生武器）', () => {});
+    syncW();
+  }
+  RT.buildPool = buildPool;
+  buildPool();
+
+  function sync() {
+    [tW, tR, tC, tA].forEach((b) => b.classList.toggle('on', !!RT.state[b._k]));
+    bArm.classList.toggle('on', !!RT.state.combat);
+    syncW();
+  }
+  function syncW() {
+    const rig = parts && parts.weaponRig;
+    if (!rig) return;
+    const inNative = rig.poolMode === 'native';
+    /* A：原生武器「开着」的高亮 */
+    if (rig.nativeList) rig.nativeList.forEach((n, i) => {
+      const b = wb['n' + i]; if (b) b.classList.toggle('on', rig.nativeOn.has(n.object) && inNative);
+    });
+    /* B：共享武器「装着」的高亮 */
+    for (const id of ['blackBlade', 'rockCannon', 'leek']) {
+      const b = wb[id]; if (b) b.classList.toggle('on', rig.entries.some((e) => e.spec.id === id));
+    }
+    /* ★ 互斥：当前池之外的那个池变灰（点它就会自动切池） */
+    if (rig.nativeList) rig.nativeList.forEach((n, i) => { const b = wb['n' + i]; if (b) b.classList.toggle('off', !inNative); });
+    for (const id of ['blackBlade', 'rockCannon', 'leek']) { const b = wb[id]; if (b) b.classList.toggle('off', inNative); }
+    bAtk.textContent = '攻击 · ' + (rig.attackLabel() || '—');
+    bMove.textContent = `换招 ${rig.move + 1}/${rig.moveCount()}`;
+  }
+  RT.syncW = syncW; sync();
+}
+
 /* ------------------------------------------------------------ 启动 */
-markOps(); buildCharacter(); renderPalettePanel(true);
+markOps(); buildCharacter(); renderPalettePanel(true); mountRuntimePanel();
 const clock = new THREE.Clock();
 function loop(){
   requestAnimationFrame(loop);
   const dt = Math.min(0.05, clock.getDelta());
   const t = clock.elapsedTime;
-  if(parts){ if(parts.hires) animateHires(parts, t, dt); else animate(parts, t, dt); }
+  if(parts){
+    if(parts.hires) animateHires(parts, t, dt);
+    else if(parts.weaponRig) LP.poseCharacter(parts, t, dt, RT.state);   // ★ 我们的状态机
+    else animate(parts, t, dt);
+  }
   if(P.autoRotate && parts) parts.root.rotation.y += dt*0.6;
   controls.update();
   renderer.render(scene, camera);
 }
 loop();
+/* ★ 首屏渲染完再加载高模模块（~840KB）—— 不压首屏 */
+(requestIdleCallback || ((f) => setTimeout(f, 150)))(() => loadHires());
 
-window.__lab = { THREE, renderer, scene, camera, controls, P, KT, AT, XT, buildCharacter, animate, animateHires, ek, NE,
+window.__lab = { THREE, renderer, scene, camera, controls, P, KT, AT, XT, Q, It, Bt, buildCharacter, animate, animateHires, ek, NE,
   HIRES_VARIANTS, buildHires, initHires, HIRES_PALETTES, hiGroupColors, applyHiresGroupRecolor,
+  NEW, loadNewList, loadNewFactory, Store, LP, RT, mountRuntimePanel,
   get parts(){ return parts; },
   setView(x,y,z){ controls.target.set(0,1.20,0); camera.position.set(x,y,z); controls.update(); },
   shot(){ renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); } };

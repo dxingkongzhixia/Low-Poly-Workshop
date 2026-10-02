@@ -22,6 +22,8 @@
 | 「页面卡 / 黑屏 / 转不动 / 说没有显卡」 | [`gpu.md`](gpu.md) |
 | 「保存/缓存/Agent 显示连不上服务」 | [`gpu.md`](gpu.md) §4 或 [`troubleshooting.md`](troubleshooting.md) §5（服务器没起） |
 | 「新增模型在实验室里看不到」 | [`storage.md`](storage.md) §2 + [`troubleshooting.md`](troubleshooting.md) §6 |
+| 「**武器**存哪 / 怎么拿 / 怎么绑动作」 | [`weapon-files.md`](weapon-files.md) ★ |
+| 「自己写的 / 外部的角色怎么接进工坊（状态机 + 武器池）」 | [`lowpoly-runtime.md`](lowpoly-runtime.md) ★ |
 | 「想拿原作 14 个角色的比例数据」 | [`../data/reference-models.json`](../data/reference-models.json) 或 `GET /api/characters` |
 | 「**AI 怎么直接拿到模型文件**」 | [`model-files.md`](model-files.md) ★ |
 | 「刘海/头发/变体为什么这么写」 | [`editor-api.md`](editor-api.md) 预设小节（三条写部件的坑） |
@@ -35,9 +37,12 @@
 | `README.md`（本文件） | 人 + AI | 索引、按症状查、文件地图 |
 | [`ai-workflow.md`](ai-workflow.md) | **AI Agent + 用户** | AI 怎么接管：接口边界、会话登记、接管流程、用户怎么和它对话、当前谁在接管 |
 | [`ai-pipeline.md`](ai-pipeline.md) | AI | 27 步流水线、8 个质量门与阈值、反模式、可整段复制的命令序列；**§〇·B 建模顺序规程** |
+| [`ai-pipeline-overview.md`](ai-pipeline-overview.md) | AI / 人 | ★ **一张图看懂主流程 + 7 个分支**（`.mmd` 同源）；分支速查表 |
 | [`../低模工坊-制作流程笔记.md`](../低模工坊-制作流程笔记.md) | **AI Agent + 用户** | ★ **踩坑笔记**：怎么「看」模型（render 特写 + `ModelReadout` 文本读数 + 服务端参照图）、**建模顺序规程**、靴翼几何写法、`geo`/`setRig` 等一堆坑 |
 | [`model-files.md`](model-files.md) | **AI Agent** | ★ **怎么直接拿到模型文件**：三种模型的三种拿法、`/bundle`、`/file/:name`、没保存的状态、拿不到的东西 |
+| [`weapon-files.md`](weapon-files.md) | **AI Agent + 用户** | ★ **武器文件**：独立路线、`NewlyAddedWeaponList/` 的形状、`/api/weapons`、`WeaponAPI`、挂载数 / 种类 / 动作绑定 |
 | [`editor-api.md`](editor-api.md) | 人 + AI | **109 个命令**的速查、规格结构、四种图元、预设与写部件的坑 |
+| [`lowpoly-runtime.md`](lowpoly-runtime.md) | **AI Agent + 改代码的人** | ★ **自定义运行时**：程序化角色（初音未来 / 黑岩射手）、状态机动画、武器池（两池互斥 / 角色绑定 / 单手·双手）、导出 spec |
 | [`storage.md`](storage.md) | 人 + AI | 三个目录的分工、保存/确认/缓存的 REST API、数据格式 |
 | [`gpu.md`](gpu.md) | 用户 | 显卡检测、**没有显卡怎么办**、软件渲染的降级建议 |
 | [`troubleshooting.md`](troubleshooting.md) | 人 + AI | 按症状排查表 + 常见报错 + §8 CSS 类名撞车 |
@@ -54,13 +59,17 @@
 ├─ pages/system.html                 系统状态页（显卡 / Agent 租约 / 缓存 / 新增模型）
 ├─ pages/docs.html                   文档页（按症状查 + 全部文档 + 文件地图）
 ├─ pages/character-editor.html       部件编辑器（window.EditorAPI，生成流水线，保存/缓存）
-├─ pages/character-lab.html          角色实验室（原作 14 低模 + 6 高模 + ★新增模型独立分区）
-├─ pages/character-mixer.html        换装室（槽位混搭）
+├─ pages/character-lab.html          角色实验室（原始模型 14 低模 + 6 高模 · 新增模型（初音 / 黑岩）· 运行时）
+├─ pages/weapon-editor.html          武器编辑器（独立路线：本体 + 挂载数/种类 + 动作绑定）
 ├─ pages/model-import.html           模型导入（.vox/.glb/.gltf/.obj → 可编辑方块）
 │
 ├─ 代码
 │   ├─ tools/_serve.js              本地服务器 + 存储 REST API（★必须先跑）
 │   ├─ src/characters.orig.js     原作低模：XT(id) / Q / KT 调色板
+│   ├─ src/characters.lowpoly.js  ★我们的运行时入口（barrel）→ src/lowpoly/*
+│   ├─ src/lowpoly/              ★程序化角色运行时（拆成模块）：
+│   │      model.js 人物模型 · weapons.js 武器本体 · moves.js 武器动作 · rig.js 武器池绑定
+│   │      actions.js 动作绑定（移动/活动）· character.js 抽象类 · export.js 导出 · index.js 出口
 │   ├─ src/characters.face.js     原作头脸管线：jT 贴图 / MT / attachFace
 │   ├─ src/characters.hires2.js   原作高模：$O(id,variant) / ek 骨架
 │   ├─ src/characters.store.js    ★浏览器侧：模型保存 / 缓存 / Agent 租约 / 显卡检测
@@ -77,7 +86,9 @@
 │   └─ data/characters.json   ★原作角色权威索引（角色实验室打开时自动发布，供 /api/characters）
 │
 ├─ 产物（★别混用，见 storage.md）
-│   ├─ NewlyAddedModelList/          确认的新增模型（正式）
+│   ├─ NewlyAddedModelList/          确认的新增模型（正式）—— 含 `miku/`、`brs/`（程序化角色）
+│   ├─ OriginalWeaponList/             共享武器库（= **共享池**本体：黑刃 / 黑岩巨炮 / 葱…；目录名沿用）
+│   ├─ NewlyAddedWeaponList/         确认的新增武器（正式）· NewlyAddedWeaponTemporaryList/ 待确认
 │   ├─ NewlyAddedModelTemporaryList/ 待确认的新增模型（临时）
 │   └─ TemporaryCache/               AI 测试产物 + agent.json（随时可清）
 │
@@ -88,7 +99,7 @@
 │   └─ refs/                  外部参考素材（img2threejs 技能的工作目录，只读参照）
 │
 ├─ docs/                      本目录（全部文档）
-└─ skills/                    第三方技能，未改动
+└─ skills/                    第三方技能（`ThreejS_Standard_modeling` 低模建模 SKILL + 使用手册）
 ```
 
 > **导航条分两组**：左边 4 个是「做模型的工具」，右边 3 个是「信息页」（AI 工作流 / 系统状态 / 文档），
