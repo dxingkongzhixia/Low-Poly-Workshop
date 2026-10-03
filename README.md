@@ -91,16 +91,17 @@ Windows 上双击 **`启动-低模工坊.bat`** 也一样（会顺手开浏览�
 完整步骤（宝塔 / PM2 / systemd / Docker + 排错）见 [`docs/deploy.md`](docs/deploy.md)，速览：
 
 ```bash
-# ① 传代码 + 权限
+# ① 传代码
 cd /www/wwwroot && git clone https://github.com/dxingkongzhixia/Low-Poly-Workshop.git lowpoly
-chown -R www:www lowpoly
+chown -R www:www lowpoly        # 用 root 跑的话可跳过
 
-# ② 起服务
-cd lowpoly && ./start.sh
-#    或 PM2  ：pm2 start ecosystem.config.js && pm2 save
+# ② 起服务（三选一）
+cd lowpoly
+bash tools/deploy-linux.sh      # ★ 最省事：systemd 常驻 + 开机自启 + 自检
+#    或 PM2   ：pm2 start ecosystem.config.js && pm2 save
 #    或 Docker：docker compose up -d --build
 
-# ③（可选）反向代理 → http://127.0.0.1:8765；站点 SSL → Let's Encrypt
+# ③ 对外：反向代理 → http://127.0.0.1:8765（记得加 client_max_body_size 64m;）
 ```
 
 **环境变量**（全部可选；模板见 [`.env.example`](.env.example)）
@@ -109,6 +110,10 @@ cd lowpoly && ./start.sh
 |---|---|---|
 | `PORT` | `8765` | 监听端口 |
 | `HOST` | `0.0.0.0` | 绑定地址；设 `127.0.0.1` 才只给本机 / 反代访问 |
+
+> ★ **共享 IP / 端口映射的机器**（机房只给几个公网端口，且只放行 Web 端口）：
+> 把内网端口做成 **80**（或宝塔站点反代到 8765），再把机房映射写成 `公网口 → 内网 80`。
+> 详见 [`docs/deploy.md`](docs/deploy.md) §5。
 
 > ⚠ **开源项目，服务端无鉴权**：`/api/*` 可读可写，谁能访问谁就能改模型。
 > 不想裸奔就用反代加一层（宝塔站点「密码访问」/ IP 白名单），或 `HOST=127.0.0.1` + 只让反代访问。
@@ -232,7 +237,12 @@ curl http://localhost:8765/api/weapons/<id>/bundle
 ├─ README.md                   本文件
 ├─ CHANGELOG.md                ★ 变更记录：每次会话改了什么 / 为什么 / 怎么验证
 ├─ 低模工坊-制作流程笔记.md      ★ 踩坑笔记 + 建模顺序规程（人和 AI 都该先看）
-├─ 启动-低模工坊.bat             双击起服务 + 开浏览器
+├─ 启动-低模工坊.bat            Windows：双击起服务 + 开浏览器
+├─ 发布到GitHub.bat             Windows：一键提交 + 推送
+├─ start.sh                    Linux / macOS 一键起（带 Node 版本检查）
+├─ ecosystem.config.js         PM2 配置（常驻）
+├─ Dockerfile · docker-compose.yml · .dockerignore   容器方式
+├─ .env.example                环境变量模板（PORT / HOST）
 │
 ├─ pages/                      8 个页面（入口 + 4 工具 + 3 信息页）
 │   ├─ index.html                启动页
@@ -259,14 +269,15 @@ curl http://localhost:8765/api/weapons/<id>/bundle
 │   └─ docs-viewer.js            自写 Markdown 渲染（无 CDN）
 │
 ├─ styles/                     shell.css（语义变量 × 深浅两套）
-├─ tools/                      _serve.js（本地服务器 + REST API） / selfcheck.js（自检）
+├─ tools/                      _serve.js（本地服务器 + REST API）· selfcheck.js（自检）· deploy-linux.sh（Linux 一键部署）
+├─ vendor/three/               ★ three.js **本地化**（本体 + addons），页面不再依赖 CDN
 │
-├─ docs/                       ★ 12 篇文档 + 1 张流水线图源（原始 Markdown，人和 AI 共用）
+├─ docs/                       ★ 13 篇文档 + 1 张流水线图源（原始 Markdown，人和 AI 共用）
 ├─ data/                       原作实测数据 + 角色索引
 ├─ models/                     烘焙高模数据                  ← 提取自游戏
-├─ images/                     预览图 / AI 卡片图 / 参考图
-├─ refs/                       外部参考素材
-├─ skills/                     第三方技能（未改动）
+├─ images/                     预览图 / 本地 SVG 徽章 / AI 卡片图 / 参考图
+├─ refs/                       外部参考素材 + 参照图收件箱（`refs/inbox/`）
+├─ skills/                     第三方技能（**只留文档与方法论**；大号模型数据已为减体积移除，见 `reference/README.md`）
 ├─ OriginalWeaponList/         ★ 共享武器库（= 共享池本体；几何以代码为准）
 ├─ NewlyAddedModelList/        ★ 你做的模型（正式）
 ├─ NewlyAddedModelTemporaryList/  待确认的

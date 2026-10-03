@@ -556,7 +556,7 @@ await EditorAPI.importMesh('/tail.glb', { parent:'head', position:[0,0,0], scale
 ```
 1. 在 VoxelAI / MagicaVoxel 里生成或手搓一个体素块
 2. 导出 File → Export as… → 选 VOX(.vox) 或 glTF(.glb)
-3. 文件放到 D:\ROTK\three.js\ 下
+3. 文件放到**仓库根目录**（`_serve.js` 的工作根）下，比如 `<仓库根>/refs/inbox/`
 4. await EditorAPI.inspectVox('/xxx.vox')  看体素数、合并块数、原始尺寸
 5. await EditorAPI.importVox('/xxx.vox', { parent, position, fitHeight })
 6. render() 看一眼 → 不对就调 position/fitHeight，或 importVox 再来一份

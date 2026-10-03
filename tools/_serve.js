@@ -477,8 +477,11 @@ const server = http.createServer(async (req, res) => {
           ? fs.readFileSync(path.join(dirDocs, 'README.md'), 'utf8') : '';
         const titles = {};
         for(const line of readme.split('\n')){
-          const m = /^-\s*\[([^\]]+)\]\(([^)]+)\)\s*(?:—|-|——)?\s*(.*)$/.exec(line.trim());
-          if(m) titles[m[2].replace(/^\.\//, '')] = m[3].trim();
+          const s = line.trim();
+          /* 支持两种写法：项目符号 `- [标题](文件) — 说明` 和表格 `| [标题](文件) | ... | 说明 |` */
+          const m = /^-\s*\[([^\]]+)\]\(([^)]+)\)\s*(?:—|-|——)?\s*(.*)$/.exec(s)
+                 || /^\|\s*\[([^\]]+)\]\(([^)]+)\)\s*\|\s*[^|]*\|\s*([^|]*)\|/.exec(s);
+          if(m) titles[m[2].replace(/^\.\//, '')] = (m[3] || '').trim();
         }
         const docFiles = fs.existsSync(dirDocs)
           ? fs.readdirSync(dirDocs).filter(f => f.endsWith('.md')).map(f => ({

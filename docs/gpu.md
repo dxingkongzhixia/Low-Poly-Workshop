@@ -71,7 +71,7 @@ EditorAPI.gpu()
 
 1. 确认服务器在跑：双击 **`启动-低模工坊.bat`**，或者手动
    ```
-   cd D:\ROTK\three.js
+   cd <仓库根目录>
    node tools/_serve.js
    ```
    看到 `低模工坊 · serving on 8765` 就对了。

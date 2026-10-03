@@ -26,7 +26,7 @@
 | 「自己写的 / 外部的角色怎么接进工坊（状态机 + 武器池）」 | [`lowpoly-runtime.md`](lowpoly-runtime.md) ★ |
 | 「让 AI **自己**建一个角色（不用给图）/ 怎么拿最新系统提示词」 | [`ai-pipeline.md`](ai-pipeline.md) §十一 + [`lowpoly-runtime.md`](lowpoly-runtime.md) §0；运行时 `EditorAPI.systemPrompt()` |
 | 「武器怎么建 / 怎么把共享武器拆开改」 | [`weapon-files.md`](weapon-files.md) §6 武器建模流水线 ★ |
-| 「怎么部署到服务器（宝塔 / Docker）/ 要不要鉴权 / 反代 413」 | [`deploy.md`](deploy.md) ★ |
+| 「怎么部署到服务器（宝塔 / Docker）/ 反代 413 / 机房只放行 Web 端口」 | [`deploy.md`](deploy.md) ★ |
 | 「想拿原作 14 个角色的比例数据」 | [`../data/reference-models.json`](../data/reference-models.json) 或 `GET /api/characters` |
 | 「**AI 怎么直接拿到模型文件**」 | [`model-files.md`](model-files.md) ★ |
 | 「刘海/头发/变体为什么这么写」 | [`editor-api.md`](editor-api.md) 预设小节（三条写部件的坑） |
@@ -49,7 +49,7 @@
 | [`storage.md`](storage.md) | 人 + AI | 三个目录的分工、保存/确认/缓存的 REST API、数据格式 |
 | [`gpu.md`](gpu.md) | 用户 | 显卡检测、**没有显卡怎么办**、软件渲染的降级建议 |
 | [`troubleshooting.md`](troubleshooting.md) | 人 + AI | 按症状排查表 + 常见报错 + §8 CSS 类名撞车 |
-| [`deploy.md`](deploy.md) | 运维 / 用户 | ★ **部署到服务器**：宝塔 / PM2 / systemd / Docker、环境变量（`PORT`/`HOST`/`AUTH_*`）、反代与 `client_max_body_size`、安全清单、升级备份、排错 |
+| [`deploy.md`](deploy.md) | 运维 / 用户 | ★ **部署到服务器**：宝塔 / PM2 / systemd / Docker、环境变量（`PORT` / `HOST`）、反向代理与 `client_max_body_size`、**共享 IP 机房的端口映射**、安全清单、升级备份、排错 |
 | [`development.md`](development.md) | **改代码的人** | ★ 架构分层 / 模块参考 / 数据模型 / **关键不变量** / 怎么扩展 / 自检脚本 |
 
 ---
@@ -69,6 +69,9 @@
 │
 ├─ 代码
 │   ├─ tools/_serve.js              本地服务器 + 存储 REST API（★必须先跑）
+│   ├─ tools/deploy-linux.sh        Linux 一键部署（systemd 常驻 + 自检）
+│   ├─ start.sh · ecosystem.config.js · Dockerfile/docker-compose.yml · .env.example   部署用
+│   ├─ vendor/three/              ★ three.js **本地化**（本体 + addons；页面 importmap 指它，**零 CDN**）
 │   ├─ src/characters.orig.js     原作低模：XT(id) / Q / KT 调色板
 │   ├─ src/characters.lowpoly.js  ★我们的运行时入口（barrel）→ src/lowpoly/*
 │   ├─ src/lowpoly/              ★程序化角色运行时（拆成模块）：
@@ -104,7 +107,8 @@
 │   └─ refs/                  外部参考素材（img2threejs 技能的工作目录，只读参照）
 │
 ├─ docs/                      本目录（全部文档）
-└─ skills/                    第三方技能（`ThreejS_Standard_modeling` 低模建模 SKILL + 使用手册）
+└─ skills/                    第三方技能（`ThreejS_Standard_modeling`：只留 SKILL / 使用手册 / 小样例；
+                               ★ 大号模型数据已为**减体积**移除，见其 `reference/README.md`）
 ```
 
 > **导航条分两组**：左边 4 个是「做模型的工具」，右边 3 个是「信息页」（AI 工作流 / 系统状态 / 文档），

@@ -9,9 +9,9 @@
 | 现象 | 原因 | 解决 |
 |---|---|---|
 | 双击 html 白屏、Console 报 `Failed to load module` | ES module 在 `file://` 下被 CORS 拦 | 必须先 `node tools/_serve.js`，用 `http://localhost:8765/` 打开 |
-| `http://localhost:8765/` 404 | 服务器没跑在项目根目录 | `cd D:\ROTK\three.js` 再 `node tools/_serve.js` |
-| 首页正常，子页 404 | 文件被移走过 | 页面都在根目录：`pages/character-editor.html` / `pages/character-lab.html` / `pages/weapon-editor.html` / `pages/model-import.html` |
-| Console 报 `import ... from 'three'` 失败 | 外网被墙，importmap 指向 jsdelivr | 需要能访问 `cdn.jsdelivr.net`；或者把 three 换成本地副本并改 importmap |
+| `http://localhost:8765/` 404 | 服务器没跑在项目根目录 | `cd` 到仓库根（含 `tools/`）再 `node tools/_serve.js` |
+| 首页正常，子页 404 | 文件被移走过 | 页面都在 `pages/` 下：`character-editor.html` / `character-lab.html` / `weapon-editor.html` / `model-import.html` |
+| Console 报 `import ... from 'three'` 失败 | 页面 importmap 解析不到 | three 已**本地化**在 `vendor/three/` —— 检查它在不在（自检 `node tools/selfcheck.js`）；确认页面 importmap 指向 `/vendor/three/...` |
 
 ---
 

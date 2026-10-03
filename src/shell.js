@@ -21,7 +21,7 @@
   var INFO = [
     ['ai-workflow.html', 'AI 工作流', 'AI 怎么接管 · 谁在接管 · 接口边界'],
     ['system.html',      '系统状态',  '显卡 / Agent 租约 / 临时缓存 / 新增模型'],
-    ['docs.html',        '文档',      '按症状查 · 10 篇文档 · 文件地图']
+    ['docs.html',        '文档',      '按症状查 · 13 篇文档 · 文件地图']
   ];
   var ALL = TOOLS.concat(INFO);
 

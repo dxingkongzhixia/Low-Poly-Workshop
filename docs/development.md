@@ -37,9 +37,9 @@
 │  │ pages/ai-workflow.html    AI 工作流（接管方式 / 谁在接管 / 接口红线）                           │ │
 │  │ pages/system.html         系统状态（显卡 / Agent 租约 / 缓存 / 新增模型）                       │ │
 │  │ pages/docs.html + src/docs-viewer.js   文档阅读器（自写 Markdown 渲染，无 CDN）                     │ │
-│  │ pages/character-editor.html  ★部件编辑器 + window.EditorAPI（116 命令）                        │ │
+│  │ pages/character-editor.html  ★部件编辑器 + window.EditorAPI（108 命令）                        │ │
 │  │ pages/character-lab.html   ★角色实验室（14 低模 + 6 高模 + 新增模型独立分区）                    │ │
-│  │ pages/weapon-editor.html 武器编辑器（跨角色槽位互换）                                             │ │
+│  │ pages/weapon-editor.html 武器编辑器（独立路线：共享武器库拆解 + 视口编辑 + 武器建模流水线）        │ │
 │  │ pages/model-import.html    模型导入（.vox/.glb/.gltf/.obj → 方块）                              │ │
 │  └──────────────────────────────────────────────────────────────────────────────────────────┘ │
 │                     │                        │                        │                       │
@@ -55,14 +55,22 @@
 │  │ src/characters.hires2.js  $O(id,variant) 高模 / initHires 载 /models/*.json                   ││
 │  └──────────────────────────────────────────────────────────────────────────────────────────┘│
 │                                                                                              │
+│  ┌── 我们的运行时（程序化）─────────────────────────────────────────────────────────────────┐│
+│  │ src/lowpoly/*             ★ 模型 / 武器 / 动作 / 武器池 / 角色抽象（Builder 与 Q 同源）         ││
+│  │ src/lowpoly/orig/*        14 个原作低模的移植数据（*_DATA）+ port.js                           ││
+│  │ vendor/three/*            three.js 本地化（页面 importmap 指它，**零 CDN**）                   ││
+│  └──────────────────────────────────────────────────────────────────────────────────────────┘│
+│                                                                                              │
 │  src/vox-import.js ── .vox / .glb / .gltf / .obj → 可编辑方块（独立，不依赖上面）                  │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
                                         │ fetch /api/*
 ┌───────────────────────────────────────┴──────────────────────────────────────────────────────┐
-│ tools/_serve.js（Node，零依赖，26 KB）                                                              │
+│ tools/_serve.js（Node，零依赖，50 KB）                                                              │
 │   静态：整个目录当 web root（ES module 必须走 http，file:// 不行）                             │
-│   REST：/api/index /api/characters /api/store /api/models[...] /api/cache /api/agent          │
+│   REST：/api/index /api/characters /api/store /api/models[...] /api/weapons[...]             │
+│         /api/original-weapons /api/cache /api/agent /api/ref[...]                             │
 │   磁盘：NewlyAddedModelList/ · NewlyAddedModelTemporaryList/ · TemporaryCache/                │
+│         NewlyAddedWeaponList/ · NewlyAddedWeaponTemporaryList/ · OriginalWeaponList/          │
 │         data/characters.json（浏览器发布回来的角色索引）                                       │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -162,7 +170,7 @@ summarize(report)  // 报告 → verdict
 
 ### 4.3 服务端 `tools/_serve.js`
 
-450 行 / 26 KB，**零依赖**（只用 `http` `fs` `path`）。见文件头注释有完整端点表。
+788 行 / 50 KB，**零依赖**（只用 `http` `fs` `path`）。见文件头注释有完整端点表。
 
 三条必须知道的实现约定：
 
@@ -670,8 +678,8 @@ src/shell.js               注入导航条 + 两个实时 chip（classic script 
 styles/shell.css              主题变量 + 导航条 + 让位规则（★ 加载在页面样式之后）
 src/docs-viewer.js         自写 Markdown 渲染（无 CDN，保住「离线可用」）
 pages/docs.html              文档阅读器（人看这个；AI 读原始 .md）
-pages/character-editor.html  ★部件编辑器 + EditorAPI（116 命令，273 KB 单文件）
+pages/character-editor.html  ★部件编辑器 + EditorAPI（108 命令，287 KB 单文件）
 pages/character-lab.html     14 低模 + 6 高模 + 新增模型独立分区（还会发布角色索引）
-pages/weapon-editor.html   跨角色槽位互换
+pages/weapon-editor.html    武器编辑器（共享武器库拆解 / 视口 gizmo 编辑 / 武器建模流水线）
 pages/model-import.html      外部模型导入
 ```
