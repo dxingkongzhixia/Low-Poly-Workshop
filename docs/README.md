@@ -26,6 +26,7 @@
 | 「自己写的 / 外部的角色怎么接进工坊（状态机 + 武器池）」 | [`lowpoly-runtime.md`](lowpoly-runtime.md) ★ |
 | 「让 AI **自己**建一个角色（不用给图）/ 怎么拿最新系统提示词」 | [`ai-pipeline.md`](ai-pipeline.md) §十一 + [`lowpoly-runtime.md`](lowpoly-runtime.md) §0；运行时 `EditorAPI.systemPrompt()` |
 | 「武器怎么建 / 怎么把共享武器拆开改」 | [`weapon-files.md`](weapon-files.md) §6 武器建模流水线 ★ |
+| 「怎么部署到服务器（宝塔 / Docker）/ 要不要鉴权 / 反代 413」 | [`deploy.md`](deploy.md) ★ |
 | 「想拿原作 14 个角色的比例数据」 | [`../data/reference-models.json`](../data/reference-models.json) 或 `GET /api/characters` |
 | 「**AI 怎么直接拿到模型文件**」 | [`model-files.md`](model-files.md) ★ |
 | 「刘海/头发/变体为什么这么写」 | [`editor-api.md`](editor-api.md) 预设小节（三条写部件的坑） |
@@ -48,6 +49,7 @@
 | [`storage.md`](storage.md) | 人 + AI | 三个目录的分工、保存/确认/缓存的 REST API、数据格式 |
 | [`gpu.md`](gpu.md) | 用户 | 显卡检测、**没有显卡怎么办**、软件渲染的降级建议 |
 | [`troubleshooting.md`](troubleshooting.md) | 人 + AI | 按症状排查表 + 常见报错 + §8 CSS 类名撞车 |
+| [`deploy.md`](deploy.md) | 运维 / 用户 | ★ **部署到服务器**：宝塔 / PM2 / systemd / Docker、环境变量（`PORT`/`HOST`/`AUTH_*`）、反代与 `client_max_body_size`、安全清单、升级备份、排错 |
 | [`development.md`](development.md) | **改代码的人** | ★ 架构分层 / 模块参考 / 数据模型 / **关键不变量** / 怎么扩展 / 自检脚本 |
 
 ---

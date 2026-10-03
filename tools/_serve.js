@@ -429,11 +429,31 @@ function listRefs(){
   }).sort((a, b) => b.mtime - a.mtime);
 }
 
+const AUTH_USER = process.env.AUTH_USER || '';
+const AUTH_PASS = process.env.AUTH_PASS || '';
+const AUTH_ON   = !!(AUTH_USER && AUTH_PASS);
+/** ★ 可选 HTTP Basic Auth：只在同时设了 `AUTH_USER` + `AUTH_PASS` 时启用（本地开发默认不开）。 */
+function authOK(req){
+  if(!AUTH_ON) return true;
+  const m = /^Basic\s+(.+)$/i.exec(req.headers['authorization'] || '');
+  if(!m) return false;
+  let dec = ''; try{ dec = Buffer.from(m[1], 'base64').toString('utf8'); }catch(e){ return false; }
+  const i = dec.indexOf(':'); if(i < 0) return false;
+  return dec.slice(0, i) === AUTH_USER && dec.slice(i + 1) === AUTH_PASS;
+}
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = decodeURIComponent(url.pathname);
 
   if(req.method === 'OPTIONS') return send(res, 204, '');
+
+  /* ★ Basic Auth 闸门（只在设了 AUTH_USER/AUTH_PASS 时生效）—— 公网部署务必开 */
+  if(!authOK(req)){
+    res.writeHead(401, { 'Content-Type':'text/plain; charset=utf-8',
+      'WWW-Authenticate': 'Basic realm="Low-Poly Workshop"',
+      'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' });
+    return res.end('401 Unauthorized');
+  }
 
   /* ---- API ---- */
   if(p.startsWith('/api/')){
@@ -849,8 +869,12 @@ function agentView(a){
 }
 
 const PORT = Number(process.env.PORT || 8765);
-server.listen(PORT, () => {
-  console.log('低模工坊 · serving on ' + PORT);
+const HOST = process.env.HOST || '127.0.0.1';   // ★ 默认只绑本机（给反代用）；要直连/局域网设 HOST=0.0.0.0
+server.listen(PORT, HOST, () => {
+  console.log('低模工坊 · serving on http://' + HOST + ':' + PORT);
+  console.log(AUTH_ON
+    ? '  Basic Auth 已开（用户 ' + AUTH_USER + '）'
+    : '  ⚠ 无鉴权：对外部署请设 AUTH_USER / AUTH_PASS（或只让反代访问）');
   console.log('  正式模型  ' + DIR.confirmed);
   console.log('  临时模型  ' + DIR.temporary);
   console.log('  临时缓存  ' + DIR.cache);

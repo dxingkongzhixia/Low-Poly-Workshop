@@ -78,6 +78,10 @@ node tools/_serve.js
 
 Windows 上双击 **`启动-低模工坊.bat`** 也一样（会顺手开浏览器）。
 
+> **要部署到服务器（Linux / 宝塔面板 / Docker）** → 见 [`docs/deploy.md`](docs/deploy.md)：
+> Linux 下 `./start.sh` 一条命令起，配 `ecosystem.config.js`(PM2) / `Dockerfile`+`docker-compose.yml`；
+> 前端 three.js 已**本地化到 `vendor/three/`**，**不依赖任何 CDN**；服务支持 `PORT`/`HOST`/`AUTH_USER`/`AUTH_PASS` 环境变量。
+
 > **为什么要起服务**：所有页面都是原生 ES module，浏览器不允许从 `file://` 加载；
 > 而且保存模型 / 武器 / 临时缓存 / Agent 接管记录都走这个服务器的小 REST API。
 > 服务端**只用 Node 内置模块**（`http` `fs` `path`），没有任何依赖。
@@ -270,6 +274,7 @@ curl http://localhost:8765/api/weapons/<id>/bundle
 | [`editor-api.md`](docs/editor-api.md) | 人 + AI | 命令速查、规格结构、四种图元 |
 | [`storage.md`](docs/storage.md) | 人 + AI | 目录分工、REST API、数据格式 |
 | [`gpu.md`](docs/gpu.md) | 用户 | 显卡检测、**没有显卡怎么办** |
+| [`deploy.md`](docs/deploy.md) | 运维 | ★ 部署到服务器：宝塔 / PM2 / systemd / Docker、环境变量、反向代理、安全清单 |
 | [`troubleshooting.md`](docs/troubleshooting.md) | 人 + AI | 按症状排查（含踩过的坑） |
 | [`development.md`](docs/development.md) | 改代码的人 | ★ 架构分层、模块参考、**关键不变量** |
 

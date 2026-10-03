@@ -1,0 +1,10 @@
+.git
+.gitignore
+node_modules
+TemporaryCache/*
+!TemporaryCache/README.md
+*.log
+*.tmp
+Thumbs.db
+desktop.ini
+.DS_Store
