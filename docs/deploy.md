@@ -91,6 +91,13 @@ docker compose logs -f
 
 ## 4. 方式 C：systemd（不用面板）
 
+> ★ 仓库自带一键脚本，直接把下面这些做完：
+> ```bash
+> cd /www/wwwroot/lowpoly
+> bash tools/deploy-linux.sh          # 默认 8765；换端口： bash tools/deploy-linux.sh 80
+> ```
+> 它会自动找 node（优先宝塔 Node 版本管理器里的）、写 unit、启动 + 开机自启、自检。
+
 ```ini
 # /etc/systemd/system/lowpoly.service
 [Unit]
