@@ -12,6 +12,10 @@ desktop.ini
 # ---- 依赖 / 构建产物（本项目零依赖零构建，留个位防以后误提交）----
 node_modules/
 dist/
+# ---- 真实环境变量（含密码/token）不进库；模板是 .env.example ----
+.env
+.env.local
+*.env
 # ---- 参照图 / 门报告 / 截图 / 试跑产物：都是「随时可清」的，不进版本库 ----
 TemporaryCache/*
 !TemporaryCache/README.md

@@ -5,6 +5,13 @@
 
 **零依赖 · 零构建 · 纯离线**（Node 起一个静态服务就能跑，没有 npm、没有打包器、没有 CDN）
 
+![dependencies](https://img.shields.io/badge/dependencies-0-2ea44f?style=flat-square)
+![build](https://img.shields.io/badge/build-none-4b8bbe?style=flat-square)
+![CDN](https://img.shields.io/badge/CDN-none-6f42c1?style=flat-square)
+![node](https://img.shields.io/badge/node-16%2B-3c873a?style=flat-square)
+![docker](https://img.shields.io/badge/docker-ready-2496ed?style=flat-square)
+![license](https://img.shields.io/badge/license-non--commercial-orange?style=flat-square)
+
 ```
 14 个原作低模（程序化重建，三角面逐人全等）  ·  2 个运行时角色（初音未来 / 黑岩射手）
 4 个工具 + 8 个页面  ·  3 角色 × 2 个烘焙高模变体
@@ -78,9 +85,39 @@ node tools/_serve.js
 
 Windows 上双击 **`启动-低模工坊.bat`** 也一样（会顺手开浏览器）。
 
-> **要部署到服务器（Linux / 宝塔面板 / Docker）** → 见 [`docs/deploy.md`](docs/deploy.md)：
-> Linux 下 `./start.sh` 一条命令起，配 `ecosystem.config.js`(PM2) / `Dockerfile`+`docker-compose.yml`；
-> 前端 three.js 已**本地化到 `vendor/three/`**，**不依赖任何 CDN**；服务支持 `PORT`/`HOST`/`AUTH_USER`/`AUTH_PASS` 环境变量。
+## 部署（Linux / 宝塔面板 / Docker）
+
+零依赖、无构建，**装好 Node 就能跑**；前端 three.js 已本地化在 `vendor/three/`，**不依赖 CDN**。
+完整步骤（宝塔 / PM2 / systemd / Docker + 安全清单 + 排错）见 [`docs/deploy.md`](docs/deploy.md)，速览：
+
+```bash
+# ① 传代码 + 权限
+cd /www/wwwroot && git clone https://github.com/dxingkongzhixia/Low-Poly-Workshop.git lowpoly
+chown -R www:www lowpoly
+
+# ② 起服务（带鉴权；只绑本机，交给反代）
+cd lowpoly && AUTH_USER=admin AUTH_PASS='换一个强密码' ./start.sh
+#    或 PM2  ：AUTH_USER=admin AUTH_PASS='强密码' pm2 start ecosystem.config.js && pm2 save
+#    或 Docker：AUTH_USER=admin AUTH_PASS='强密码' docker compose up -d --build
+
+# ③ 反向代理 → http://127.0.0.1:8765（nginx / 宝塔「反向代理」）
+#    ★ 记得加：  client_max_body_size 64m;   否则存模型报 413
+# ④ 站点 SSL → Let's Encrypt；安全组只放行 80 / 443
+```
+
+**环境变量**（全部可选；模板见 [`.env.example`](.env.example)）
+
+| 变量 | 默认 | 作用 |
+|---|---|---|
+| `PORT` | `8765` | 监听端口 |
+| `HOST` | `127.0.0.1` | **默认只绑本机**（给反代用）；直连 / 局域网 / 容器映射用 `0.0.0.0` |
+| `AUTH_USER` / `AUTH_PASS` | 空 | 整站 **Basic Auth** —— 给「人 / 浏览器」 |
+| `API_READ_TOKEN` | 空 | `/api/*` 的**只读** token —— 给「只看模型」的 AI |
+| `API_WRITE_TOKEN` | 空 | `/api/*` 的**读写** token —— 给要存 / 删的 AI |
+
+> ⚠ **服务默认无鉴权、`/api/*` 可读可写。** 对外部署请至少开 Basic Auth；给 AI Agent **只发只读 token** 最安全。
+> token 三种传法：`Authorization: Bearer <t>` / `X-API-Token: <t>` / GET 时 `?token=<t>`。
+> ⚠ 配了 token 就**务必同时开 Basic Auth**，否则浏览器（没有 token）会调不动 `/api/*`。
 
 > **为什么要起服务**：所有页面都是原生 ES module，浏览器不允许从 `file://` 加载；
 > 而且保存模型 / 武器 / 临时缓存 / Agent 接管记录都走这个服务器的小 REST API。

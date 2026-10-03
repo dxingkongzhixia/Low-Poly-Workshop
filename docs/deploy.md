@@ -17,17 +17,50 @@ AUTH_USER=admin AUTH_PASS='换成一个强密码' HOST=127.0.0.1 ./start.sh
 
 ---
 
-## 1. 环境变量（全部可选）
+## 1. 环境变量（全部可选；模板见仓库根 [`.env.example`](../.env.example)）
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | `PORT` | `8765` | 监听端口 |
 | `HOST` | `127.0.0.1` | **默认只绑本机**（给反代用）。要直连 / 局域网 / 容器映射，设 `0.0.0.0` |
-| `AUTH_USER` | 空 | 设了就开 **HTTP Basic Auth** |
+| `AUTH_USER` | 空 | **整站 Basic Auth**（给「人 / 浏览器」）。设了就网页 + `/api/*` 都要账号密码 |
 | `AUTH_PASS` | 空 | 同上（**必须两个都设才生效**） |
+| `API_READ_TOKEN` | 空 | `/api/*` 的**只读** token（给「只看模型」的 AI / 脚本） |
+| `API_WRITE_TOKEN` | 空 | `/api/*` 的**读写** token（存 / 确认 / 删） |
 
-> ⚠ **服务本身没有任何鉴权、CORS 全开、`/api/*` 可读可写。**
-> 对外部署**务必**设 `AUTH_USER`/`AUTH_PASS`，或者只让反代/内网访问。
+> `.env` **不会自动加载**（零依赖，没有 dotenv）：
+> - **docker compose** 会自动读同目录 `.env` ✓
+> - shell：`set -a; . ./.env; set +a; ./start.sh`
+> - PM2：先 `export`，再 `pm2 start ecosystem.config.js --update-env`
+
+### 1b. 两种钥匙，各管一段
+
+```
+① AUTH_USER / AUTH_PASS  →  整站（静态页 + /api/* ），HTTP Basic Auth      ← 人 / 浏览器
+② API_READ_TOKEN         →  只管 /api/*，只放 GET / HEAD                   ← 只想看模型的 AI
+   API_WRITE_TOKEN       →  只管 /api/*，全放（也含读）                      ← 要存/删的 AI
+```
+
+- token 三种传法（任选）：`Authorization: Bearer <t>` · `X-API-Token: <t>` · GET 时 `?token=<t>`
+- **只发只读 token 给 Agent 最安全** —— 它拿不走也改不了模型，只能读。
+- 没配任何 token 时，`/api/*` **跟随 Basic Auth**（即：开了 Basic 就要 Basic，没开就敞开）。
+
+```bash
+# 只读：查列表 / 拿模型
+curl -H "Authorization: Bearer $API_READ_TOKEN"  http://127.0.0.1:8765/api/models
+curl -H "X-API-Token: $API_READ_TOKEN"           "http://127.0.0.1:8765/api/models"      # 等价
+curl "http://127.0.0.1:8765/api/characters?token=$API_READ_TOKEN"                        # GET 还能用 ?token=
+
+# 读写：存模型（用只读 token 会被 401）
+curl -H "X-API-Token: $API_WRITE_TOKEN" -H "Content-Type: application/json" \
+     -d @model.json http://127.0.0.1:8765/api/models
+```
+
+> ⚠ **配了 token 就务必同时开 Basic Auth**：否则浏览器（它没有 token）会调不动 `/api/*`，网页就废了。
+> 服务启动时若发现「只开了 token、没开 Basic」，会打印这条警告。
+
+> ⚠ **服务默认无鉴权、CORS 全开、`/api/*` 可读可写。**
+> 对外部署**务必**开 Basic Auth（+ 给 Agent 只读 token），或者只让反代 / 内网访问。
 
 ---
 
@@ -131,11 +164,12 @@ curl -s  http://127.0.0.1:8765/api/characters | head
 ## 6. 安全清单（对外部署照着勾）
 
 - [ ] 设了 `AUTH_USER` / `AUTH_PASS`（或只在内网 / 反代 Basic Auth 后面）
+- [ ] 给 AI Agent 只发 **`API_READ_TOKEN`（只读）**；确实要写才给 `API_WRITE_TOKEN`
+- [ ] ⚠ 配了 token 就**同时开 Basic Auth**（否则网页 UI 调不动 `/api/*`）
 - [ ] `HOST=127.0.0.1`（只给反代），8765 不对公网开放
 - [ ] 反代加了 `client_max_body_size 64m`
 - [ ] HTTPS 打开
 - [ ] 项目目录属主是可写用户（`chown -R www:www`）
-- [ ] 明白 `/api/*` 无 token：能给 AI Agent 用的同时，**谁都能读/写模型** —— 靠 Basic Auth / IP 白名单挡住
 - [ ] 静态目录包含源码（`tools/_serve.js` 等），别把不该公开的东西放进来
 
 ---
@@ -167,5 +201,7 @@ tar czf lowpoly-data-$(date +%F).tgz \
 | 存模型报 **413** | 反代没加 `client_max_body_size 64m` |
 | 存模型报 **500 / EACCES** | 项目目录不可写 → `chown -R www:www .` |
 | 页面白屏、控制台报找不到模块 | 看 `vendor/three/` 在不在（应该随仓库一起提交）；自检 `node tools/selfcheck.js` |
-| 401 一直弹 | 设了 `AUTH_USER/AUTH_PASS`；用 `-u 用户:密码`，或清掉这两个变量 |
+| 401 一直弹（浏览器） | 设了 `AUTH_USER/AUTH_PASS`；输账号密码，或清掉这两个变量 |
+| `/api/*` 返回 401 但页面能开 | 配了 API token：`Authorization: Bearer <t>` / `X-API-Token` / `?token=`；**只读 token 不能 POST** |
+| 页面能打开但「存模型 / 列表」报错 | 只开了 token、没开 Basic Auth → 浏览器没有 token。**同时开 Basic Auth**，或去掉 token |
 | Agent（AI）连不上 `/api/*` | 开了 Basic Auth 时，Agent 请求要带 `Authorization` |
