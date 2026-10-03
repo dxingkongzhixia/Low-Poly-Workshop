@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="69" height="20" role="img" aria-label="CDN: none">
+<title>CDN: none</title>
+<linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
+<clipPath id="r"><rect width="69" height="20" rx="3" fill="#fff"/></clipPath>
+<g clip-path="url(#r)">
+<rect width="33" height="20" fill="#555"/>
+<rect x="33" width="36" height="20" fill="#6f42c1"/>
+<rect width="69" height="20" fill="url(#s)"/>
+</g>
+<g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110" aria-hidden="true" transform="scale(.1)">
+<text x="165" y="150" fill="#010101" fill-opacity=".3">CDN</text>
+<text x="165" y="140">CDN</text>
+<text x="510" y="150" fill="#010101" fill-opacity=".3">none</text>
+<text x="510" y="140">none</text>
+</g>
+</svg>

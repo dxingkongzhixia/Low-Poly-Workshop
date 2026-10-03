@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="63" height="20" role="img" aria-label="node: 16+">
+<title>node: 16+</title>
+<linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
+<clipPath id="r"><rect width="63" height="20" rx="3" fill="#fff"/></clipPath>
+<g clip-path="url(#r)">
+<rect width="36" height="20" fill="#555"/>
+<rect x="36" width="27" height="20" fill="#3c873a"/>
+<rect width="63" height="20" fill="url(#s)"/>
+</g>
+<g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110" aria-hidden="true" transform="scale(.1)">
+<text x="180" y="150" fill="#010101" fill-opacity=".3">node</text>
+<text x="180" y="140">node</text>
+<text x="495" y="150" fill="#010101" fill-opacity=".3">16+</text>
+<text x="495" y="140">16+</text>
+</g>
+</svg>

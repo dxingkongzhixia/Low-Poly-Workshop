@@ -5,12 +5,12 @@
 
 **零依赖 · 零构建 · 纯离线**（Node 起一个静态服务就能跑，没有 npm、没有打包器、没有 CDN）
 
-![dependencies](https://img.shields.io/badge/dependencies-0-2ea44f?style=flat-square)
-![build](https://img.shields.io/badge/build-none-4b8bbe?style=flat-square)
-![CDN](https://img.shields.io/badge/CDN-none-6f42c1?style=flat-square)
-![node](https://img.shields.io/badge/node-16%2B-3c873a?style=flat-square)
-![docker](https://img.shields.io/badge/docker-ready-2496ed?style=flat-square)
-![license](https://img.shields.io/badge/license-non--commercial-orange?style=flat-square)
+![dependencies](images/badges/dependencies.svg)
+![build](images/badges/build.svg)
+![CDN](images/badges/cdn.svg)
+![node](images/badges/node.svg)
+![docker](images/badges/docker.svg)
+![license](images/badges/license.svg)
 
 ```
 14 个原作低模（程序化重建，三角面逐人全等）  ·  2 个运行时角色（初音未来 / 黑岩射手）
