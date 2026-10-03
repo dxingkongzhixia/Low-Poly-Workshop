@@ -6,8 +6,8 @@
  *   pm2 logs lowpoly-workshop         # 看日志
  *   pm2 restart lowpoly-workshop
  *
- * 公网部署务必打开鉴权（下面 env 里填，或先在 shell 里 export 再 pm2 start）：
- *   AUTH_USER=admin AUTH_PASS='你的密码' pm2 start ecosystem.config.js
+ * 开源项目 · 服务端无鉴权。绑哪个地址用 HOST 控制：
+ *   HOST=0.0.0.0（默认，所有网卡） / HOST=127.0.0.1（只给本机 / 反代）
  * ========================================================================== */
 module.exports = {
   apps: [{
@@ -15,10 +15,8 @@ module.exports = {
     script: 'tools/_serve.js',
     cwd: __dirname,
     env: {
-      PORT:      process.env.PORT      || 8765,
-      HOST:      process.env.HOST      || '127.0.0.1',   // 只给反代用；直连改 0.0.0.0
-      AUTH_USER: process.env.AUTH_USER || '',
-      AUTH_PASS: process.env.AUTH_PASS || '',
+      PORT: process.env.PORT || 8765,
+      HOST: process.env.HOST || '0.0.0.0',
     },
     autorestart: true,
     max_memory_restart: '512M',

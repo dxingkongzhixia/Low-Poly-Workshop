@@ -88,21 +88,19 @@ Windows 上双击 **`启动-低模工坊.bat`** 也一样（会顺手开浏览�
 ## 部署（Linux / 宝塔面板 / Docker）
 
 零依赖、无构建，**装好 Node 就能跑**；前端 three.js 已本地化在 `vendor/three/`，**不依赖 CDN**。
-完整步骤（宝塔 / PM2 / systemd / Docker + 安全清单 + 排错）见 [`docs/deploy.md`](docs/deploy.md)，速览：
+完整步骤（宝塔 / PM2 / systemd / Docker + 排错）见 [`docs/deploy.md`](docs/deploy.md)，速览：
 
 ```bash
 # ① 传代码 + 权限
 cd /www/wwwroot && git clone https://github.com/dxingkongzhixia/Low-Poly-Workshop.git lowpoly
 chown -R www:www lowpoly
 
-# ② 起服务（带鉴权；只绑本机，交给反代）
-cd lowpoly && AUTH_USER=admin AUTH_PASS='换一个强密码' ./start.sh
-#    或 PM2  ：AUTH_USER=admin AUTH_PASS='强密码' pm2 start ecosystem.config.js && pm2 save
-#    或 Docker：AUTH_USER=admin AUTH_PASS='强密码' docker compose up -d --build
+# ② 起服务
+cd lowpoly && ./start.sh
+#    或 PM2  ：pm2 start ecosystem.config.js && pm2 save
+#    或 Docker：docker compose up -d --build
 
-# ③ 反向代理 → http://127.0.0.1:8765（nginx / 宝塔「反向代理」）
-#    ★ 记得加：  client_max_body_size 64m;   否则存模型报 413
-# ④ 站点 SSL → Let's Encrypt；安全组只放行 80 / 443
+# ③（可选）反向代理 → http://127.0.0.1:8765；站点 SSL → Let's Encrypt
 ```
 
 **环境变量**（全部可选；模板见 [`.env.example`](.env.example)）
@@ -110,14 +108,10 @@ cd lowpoly && AUTH_USER=admin AUTH_PASS='换一个强密码' ./start.sh
 | 变量 | 默认 | 作用 |
 |---|---|---|
 | `PORT` | `8765` | 监听端口 |
-| `HOST` | `127.0.0.1` | **默认只绑本机**（给反代用）；直连 / 局域网 / 容器映射用 `0.0.0.0` |
-| `AUTH_USER` / `AUTH_PASS` | 空 | 整站 **Basic Auth** —— 给「人 / 浏览器」 |
-| `API_READ_TOKEN` | 空 | `/api/*` 的**只读** token —— 给「只看模型」的 AI |
-| `API_WRITE_TOKEN` | 空 | `/api/*` 的**读写** token —— 给要存 / 删的 AI |
+| `HOST` | `0.0.0.0` | 绑定地址；设 `127.0.0.1` 才只给本机 / 反代访问 |
 
-> ⚠ **服务默认无鉴权、`/api/*` 可读可写。** 对外部署请至少开 Basic Auth；给 AI Agent **只发只读 token** 最安全。
-> token 三种传法：`Authorization: Bearer <t>` / `X-API-Token: <t>` / GET 时 `?token=<t>`。
-> ⚠ 配了 token 就**务必同时开 Basic Auth**，否则浏览器（没有 token）会调不动 `/api/*`。
+> ⚠ **开源项目，服务端无鉴权**：`/api/*` 可读可写，谁能访问谁就能改模型。
+> 不想裸奔就用反代加一层（宝塔站点「密码访问」/ IP 白名单），或 `HOST=127.0.0.1` + 只让反代访问。
 
 > **为什么要起服务**：所有页面都是原生 ES module，浏览器不允许从 `file://` 加载；
 > 而且保存模型 / 武器 / 临时缓存 / Agent 接管记录都走这个服务器的小 REST API。

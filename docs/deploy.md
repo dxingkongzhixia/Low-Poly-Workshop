@@ -11,8 +11,8 @@
 
 ```bash
 # 在服务器上（仓库根目录）
-AUTH_USER=admin AUTH_PASS='换成一个强密码' HOST=127.0.0.1 ./start.sh
-# 再用 nginx / 宝塔反代  http://127.0.0.1:8765  →  你的域名（记得 client_max_body_size）
+./start.sh
+# 打开 http://服务器IP:8765/   或   用 nginx / 宝塔反代到你的域名
 ```
 
 ---
@@ -22,45 +22,15 @@ AUTH_USER=admin AUTH_PASS='换成一个强密码' HOST=127.0.0.1 ./start.sh
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | `PORT` | `8765` | 监听端口 |
-| `HOST` | `127.0.0.1` | **默认只绑本机**（给反代用）。要直连 / 局域网 / 容器映射，设 `0.0.0.0` |
-| `AUTH_USER` | 空 | **整站 Basic Auth**（给「人 / 浏览器」）。设了就网页 + `/api/*` 都要账号密码 |
-| `AUTH_PASS` | 空 | 同上（**必须两个都设才生效**） |
-| `API_READ_TOKEN` | 空 | `/api/*` 的**只读** token（给「只看模型」的 AI / 脚本） |
-| `API_WRITE_TOKEN` | 空 | `/api/*` 的**读写** token（存 / 确认 / 删） |
+| `HOST` | `0.0.0.0` | 绑定地址。默认**所有网卡**；设 `127.0.0.1` 就只给本机 / 反向代理 |
 
 > `.env` **不会自动加载**（零依赖，没有 dotenv）：
 > - **docker compose** 会自动读同目录 `.env` ✓
 > - shell：`set -a; . ./.env; set +a; ./start.sh`
 > - PM2：先 `export`，再 `pm2 start ecosystem.config.js --update-env`
 
-### 1b. 两种钥匙，各管一段
-
-```
-① AUTH_USER / AUTH_PASS  →  整站（静态页 + /api/* ），HTTP Basic Auth      ← 人 / 浏览器
-② API_READ_TOKEN         →  只管 /api/*，只放 GET / HEAD                   ← 只想看模型的 AI
-   API_WRITE_TOKEN       →  只管 /api/*，全放（也含读）                      ← 要存/删的 AI
-```
-
-- token 三种传法（任选）：`Authorization: Bearer <t>` · `X-API-Token: <t>` · GET 时 `?token=<t>`
-- **只发只读 token 给 Agent 最安全** —— 它拿不走也改不了模型，只能读。
-- 没配任何 token 时，`/api/*` **跟随 Basic Auth**（即：开了 Basic 就要 Basic，没开就敞开）。
-
-```bash
-# 只读：查列表 / 拿模型
-curl -H "Authorization: Bearer $API_READ_TOKEN"  http://127.0.0.1:8765/api/models
-curl -H "X-API-Token: $API_READ_TOKEN"           "http://127.0.0.1:8765/api/models"      # 等价
-curl "http://127.0.0.1:8765/api/characters?token=$API_READ_TOKEN"                        # GET 还能用 ?token=
-
-# 读写：存模型（用只读 token 会被 401）
-curl -H "X-API-Token: $API_WRITE_TOKEN" -H "Content-Type: application/json" \
-     -d @model.json http://127.0.0.1:8765/api/models
-```
-
-> ⚠ **配了 token 就务必同时开 Basic Auth**：否则浏览器（它没有 token）会调不动 `/api/*`，网页就废了。
-> 服务启动时若发现「只开了 token、没开 Basic」，会打印这条警告。
-
-> ⚠ **服务默认无鉴权、CORS 全开、`/api/*` 可读可写。**
-> 对外部署**务必**开 Basic Auth（+ 给 Agent 只读 token），或者只让反代 / 内网访问。
+> ⚠ **开源项目，服务端无鉴权**：CORS 全开、`/api/*` 可读可写 —— 谁能访问谁就能改模型。
+> 不想裸奔就**在反代那一层**加保护（宝塔站点「密码访问」/ IP 白名单），或 `HOST=127.0.0.1` 只让反代访问。
 
 ---
 
@@ -82,8 +52,8 @@ chown -R www:www /www/wwwroot/lowpoly
 ```
 
 **④ 起进程**（三选一）
-- **宝塔「Node 项目」**：目录=`/www/wwwroot/lowpoly`，启动文件=`tools/_serve.js`，
-  环境变量加 `HOST=127.0.0.1`、`AUTH_USER`、`AUTH_PASS`，端口 `8765` → 启动 + 开机自启。
+- **宝塔「Node 项目」**：目录=`/www/wwwroot/lowpoly`，启动文件=`tools/_serve.js`，端口 `8765`
+  → 启动 + 开机自启。（想只给反代访问，就加环境变量 `HOST=127.0.0.1`。）
 - **宝塔 PM2 管理器**：脚本 `tools/_serve.js`、运行目录=仓库根、名称 `lowpoly-workshop`。
   也可以直接 `pm2 start ecosystem.config.js && pm2 save`（配置就在仓库里）。
 - **systemd**：见 §4。
@@ -110,7 +80,7 @@ location / {
 仓库里带 `Dockerfile` + `docker-compose.yml`（镜像基于 `node:20-alpine`，无需构建依赖）。
 
 ```bash
-AUTH_USER=admin AUTH_PASS='强密码' docker compose up -d --build
+docker compose up -d --build
 docker compose logs -f
 ```
 - compose 把端口映射成 `127.0.0.1:8765`（只给反代用）；要直连改成 `"8765:8765"` 并把 `HOST` 留给镜像默认的 `0.0.0.0`。
@@ -131,9 +101,8 @@ After=network.target
 WorkingDirectory=/www/wwwroot/lowpoly
 ExecStart=/usr/bin/node tools/_serve.js
 Environment=PORT=8765
-Environment=HOST=127.0.0.1
-Environment=AUTH_USER=admin
-Environment=AUTH_PASS=换成强密码
+Environment=HOST=0.0.0.0
+# 想只给本机 / 反代访问就改成： Environment=HOST=127.0.0.1
 Restart=always
 User=www
 
@@ -152,8 +121,7 @@ journalctl -u lowpoly -f
 
 ```bash
 curl -I  http://127.0.0.1:8765/                      # 200
-curl -sI http://127.0.0.1:8765/api/models            # 200（没开鉴权） / 401（开了）
-curl -u admin:密码 http://127.0.0.1:8765/api/models   # 开了鉴权时
+curl -s  http://127.0.0.1:8765/api/models            # {"confirmed":[...],"temporary":[]}
 curl -s  http://127.0.0.1:8765/api/characters | head
 ```
 
@@ -161,12 +129,12 @@ curl -s  http://127.0.0.1:8765/api/characters | head
 
 ---
 
-## 6. 安全清单（对外部署照着勾）
+## 6. 安全清单（服务端无鉴权，全靠外面这层）
 
-- [ ] 设了 `AUTH_USER` / `AUTH_PASS`（或只在内网 / 反代 Basic Auth 后面）
-- [ ] 给 AI Agent 只发 **`API_READ_TOKEN`（只读）**；确实要写才给 `API_WRITE_TOKEN`
-- [ ] ⚠ 配了 token 就**同时开 Basic Auth**（否则网页 UI 调不动 `/api/*`）
-- [ ] `HOST=127.0.0.1`（只给反代），8765 不对公网开放
+> 服务端**不做鉴权**（开源项目），所以「安全」完全靠**外面这一层**。对外部署照着勾：
+
+- [ ] 用反代（nginx / 宝塔）对外；`HOST=127.0.0.1` 或防火墙不让 8765 对公网开放
+- [ ] 反代加了访问控制（宝塔站点「密码访问」/ IP 白名单）—— 因为 `/api/*` 谁都能写
 - [ ] 反代加了 `client_max_body_size 64m`
 - [ ] HTTPS 打开
 - [ ] 项目目录属主是可写用户（`chown -R www:www`）
@@ -201,7 +169,4 @@ tar czf lowpoly-data-$(date +%F).tgz \
 | 存模型报 **413** | 反代没加 `client_max_body_size 64m` |
 | 存模型报 **500 / EACCES** | 项目目录不可写 → `chown -R www:www .` |
 | 页面白屏、控制台报找不到模块 | 看 `vendor/three/` 在不在（应该随仓库一起提交）；自检 `node tools/selfcheck.js` |
-| 401 一直弹（浏览器） | 设了 `AUTH_USER/AUTH_PASS`；输账号密码，或清掉这两个变量 |
-| `/api/*` 返回 401 但页面能开 | 配了 API token：`Authorization: Bearer <t>` / `X-API-Token` / `?token=`；**只读 token 不能 POST** |
-| 页面能打开但「存模型 / 列表」报错 | 只开了 token、没开 Basic Auth → 浏览器没有 token。**同时开 Basic Auth**，或去掉 token |
-| Agent（AI）连不上 `/api/*` | 开了 Basic Auth 时，Agent 请求要带 `Authorization` |
+| `/api/*` 返回 401 / 403 | 本服务**没有鉴权**，出现 401/403 基本是**反代那边**加的（密码访问 / IP 白名单） |

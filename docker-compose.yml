@@ -1,9 +1,10 @@
 # 低模工坊 · docker compose
-#   起：  AUTH_USER=admin AUTH_PASS='你的密码' docker compose up -d --build
+#   起：  docker compose up -d --build
 #   看：  docker compose logs -f
 #   停：  docker compose down
 #
-# 不设 AUTH_USER/AUTH_PASS 就是无鉴权 —— 那请只在反代后面开，别直接暴露端口。
+# 开源项目 · 无鉴权。默认只映射到宿主机 127.0.0.1（交给反代）；
+# 想直连公网就把 ports 改成 "8765:8765"。
 services:
   lowpoly:
     build: .
@@ -11,12 +12,10 @@ services:
     container_name: lowpoly-workshop
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8765:8765"     # ★ 只映射到宿主机本机，交给反代；要直连改成 "8765:8765"
+      - "127.0.0.1:8765:8765"     # 只映射到宿主机本机；要直连改 "8765:8765"
     environment:
       PORT: "8765"
-      HOST: "0.0.0.0"
-      AUTH_USER: "${AUTH_USER:-}"
-      AUTH_PASS: "${AUTH_PASS:-}"
+      HOST: "0.0.0.0"             # 容器里必须绑 0.0.0.0 才能把端口映射出去
     volumes:
       # 产物挂出来，容器重建不丢模型
       - ./NewlyAddedModelList:/app/NewlyAddedModelList

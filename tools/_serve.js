@@ -429,77 +429,13 @@ function listRefs(){
   }).sort((a, b) => b.mtime - a.mtime);
 }
 
-/* ==========================================================================
- * 鉴权（两层，各自可选、可叠加）
- *   ① 整站 Basic Auth     AUTH_USER / AUTH_PASS              —— 给「人 / 浏览器」
- *   ② API token（只管 /api/*） API_READ_TOKEN / API_WRITE_TOKEN —— 给「AI / 脚本」
- *        · 只读 token  → 只放 GET / HEAD
- *        · 读写 token  → 全放（也包含读）
- *        传法：Authorization: Bearer <t>  |  X-API-Token: <t>  |  ?token=<t>
- *   ⚠ 配了 token 但**没开 Basic Auth** 时，网页 UI（浏览器没有 token）会调不动 /api/* ——
- *      所以要么两个都开（推荐：人走 Basic、Agent 走 token），要么别配 token。
- * ========================================================================== */
-const crypto = require('crypto');
-const AUTH_USER = process.env.AUTH_USER || '';
-const AUTH_PASS = process.env.AUTH_PASS || '';
-const AUTH_ON   = !!(AUTH_USER && AUTH_PASS);
-const API_READ  = process.env.API_READ_TOKEN  || '';
-const API_WRITE = process.env.API_WRITE_TOKEN || '';
-const API_TOKENS_ON = !!(API_READ || API_WRITE);
-
-/** 恒定时间比较（别让 token 用 === 泄漏长度/前缀） */
-function safeEq(a, b){
-  const A = Buffer.from(String(a)), B = Buffer.from(String(b));
-  return A.length === B.length && crypto.timingSafeEqual(A, B);
-}
-/** Basic Auth 是否通过（没开 Basic 就恒 true） */
-function authOK(req){
-  if(!AUTH_ON) return true;
-  const m = /^Basic\s+(.+)$/i.exec(req.headers['authorization'] || '');
-  if(!m) return false;
-  let dec = ''; try{ dec = Buffer.from(m[1], 'base64').toString('utf8'); }catch(e){ return false; }
-  const i = dec.indexOf(':'); if(i < 0) return false;
-  return safeEq(dec.slice(0, i), AUTH_USER) && safeEq(dec.slice(i + 1), AUTH_PASS);
-}
-function apiTokenOf(req, url){
-  const m = /^Bearer\s+(.+)$/i.exec(req.headers['authorization'] || '');
-  if(m) return m[1].trim();
-  const x = req.headers['x-api-token']; if(x) return String(x).trim();
-  const q = url.searchParams.get('token'); if(q) return String(q).trim();
-  return '';
-}
-/** /api/* 的 token 是否够用（读方法要 read/write 任一；写方法要 write） */
-function apiTokenPasses(req, url){
-  const tok = apiTokenOf(req, url);
-  if(!tok) return false;
-  if(API_WRITE && safeEq(tok, API_WRITE)) return true;
-  const isRead = req.method === 'GET' || req.method === 'HEAD';
-  return isRead && !!API_READ && safeEq(tok, API_READ);
-}
+/* 本项目是**开源学习项目**，服务端**不做鉴权**（谁都能读 / 写模型）。
+   只留一个网络开关：环境变量 `HOST`（默认 `0.0.0.0` = 所有网卡；设成 `127.0.0.1` 就只给本机 / 反向代理访问）。 */
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = decodeURIComponent(url.pathname);
 
   if(req.method === 'OPTIONS') return send(res, 204, '');
-
-  /* ---- 鉴权闸门（两层，见文件顶部注释）---- */
-  const isApi = p.startsWith('/api/');
-  if(isApi){
-    const viaBasic = AUTH_ON && authOK(req);
-    const viaToken = API_TOKENS_ON && apiTokenPasses(req, url);
-    const ok = API_TOKENS_ON ? (viaBasic || viaToken) : (!AUTH_ON || authOK(req));
-    if(!ok){
-      // ★ 401 也要把请求体读干，否则污染 keep-alive（表现为随机 502）
-      try{ if(['POST','PUT','DELETE','PATCH'].includes(req.method)) await readBody(req); }catch(e){}
-      return send(res, 401, JSON.stringify({ ok:false,
-        error:'需要 API token：Authorization: Bearer <token> / X-API-Token: <token> / ?token=<token>' }));
-    }
-  } else if(AUTH_ON && !authOK(req)){
-    res.writeHead(401, { 'Content-Type':'text/plain; charset=utf-8',
-      'WWW-Authenticate': 'Basic realm="Low-Poly Workshop"',
-      'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' });
-    return res.end('401 Unauthorized');
-  }
 
   /* ---- API ---- */
   if(p.startsWith('/api/')){
@@ -915,19 +851,10 @@ function agentView(a){
 }
 
 const PORT = Number(process.env.PORT || 8765);
-const HOST = process.env.HOST || '127.0.0.1';   // ★ 默认只绑本机（给反代用）；要直连/局域网设 HOST=0.0.0.0
+const HOST = process.env.HOST || '0.0.0.0';   // 默认所有网卡（原行为）；想只给本机/反代就设 HOST=127.0.0.1
 server.listen(PORT, HOST, () => {
   console.log('低模工坊 · serving on http://' + HOST + ':' + PORT);
-  console.log(AUTH_ON
-    ? '  Basic Auth  已开（用户 ' + AUTH_USER + '）'
-    : '  ⚠ Basic Auth 未开：对外部署请设 AUTH_USER / AUTH_PASS（或只让反代访问）');
-  if(API_TOKENS_ON){
-    console.log('  API token   已开：' + (API_READ ? '只读 ' : '') + (API_WRITE ? '读写 ' : '')
-      + '（Authorization: Bearer <t> / X-API-Token: <t> / ?token=<t>）');
-    if(!AUTH_ON) console.log('  ⚠ 只开了 token、没开 Basic Auth：网页 UI（浏览器没有 token）会调不动 /api/* —— 建议同时设 AUTH_USER / AUTH_PASS');
-  } else {
-    console.log('  API token   未开（/api/* 跟随 Basic Auth）');
-  }
+  console.log('  （开源项目 · 无鉴权：/api/* 可读可写）');
   console.log('  正式模型  ' + DIR.confirmed);
   console.log('  临时模型  ' + DIR.temporary);
   console.log('  临时缓存  ' + DIR.cache);
