@@ -18,7 +18,7 @@
 |---|---|
 | **保真** —— 不重画，用原作的几何 | `boxify()` 按 `geometry.userData.primitiveVertexCounts` 精确切图元（**不是** AABB 近似） |
 | **一份模型代码，四个工具共用** | 规格 `spec` 是唯一的真源；编辑器/实验室/武器编辑器/导入页都读它 |
-| **能被 AI Agent 驱动** | 所有能力都挂在 `window.EditorAPI`（116 个命令），有 `pipeline()` 状态机 + 8 个质量门 |
+| **能被 AI Agent 驱动** | 所有能力都挂在 `window.EditorAPI`（108 个命令），有 `pipeline()` 状态机 + 8 个质量门 |
 
 **没有构建步骤。** 没有 npm、没有打包器、没有 TypeScript。浏览器直接吃 ES module，
 `node tools/_serve.js` 就是全部基础设施。
@@ -81,7 +81,7 @@
  ├─ build() → 建 3D；renderAll() → 建左栏部件树
  ├─ restorePipeline()                ← 从 localStorage 恢复流水线（对话丢了它也不丢）
  ├─ 核对 _agentPending 与服务端是否一致（不一致就清掉本地接管标记）
- └─ window.EditorAPI = EditorAPI      ← 116 个命令挂上去
+ └─ window.EditorAPI = EditorAPI      ← 108 个命令挂上去
 ```
 
 **`boxify(source)` 是整个项目的核心动作**：
@@ -200,7 +200,7 @@ const safeId = s => String(s||'').trim().replace(/[^A-Za-z0-9_\u4e00-\u9fa5.\-]/
 | spec 与构建 | `spec` 变量、`build()`、`buildPart()`、`boxifySpec()`、`rezone()` |
 | 部件树 UI | `renderPartList()`、拖拽选择、`snapshotPrimPositions()` 还原选择 |
 | 流水线面板 | `renderPipelinePanel()`、`persistPipeline()` / `restorePipeline()` |
-| **`EditorAPI` 对象** | 116 个命令的唯一出口 |
+| **`EditorAPI` 对象** | 108 个命令的唯一出口 |
 | 尾部自举 | 自动包装 undo + 兜底 try/catch + `window.EditorAPI = EditorAPI` |
 
 **尾部那段包装很重要**：

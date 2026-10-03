@@ -38,7 +38,7 @@
       <div class="stat">
         <div><b>14</b><span>低模角色</span></div>
         <div><b>6</b><span>高模分支</span></div>
-        <div><b>109</b><span>EditorAPI 命令</span></div>
+        <div><b>108</b><span>EditorAPI 命令</span></div>
         <div><b>8</b><span>质量门</span></div>
       </div>
     </div>
@@ -71,19 +71,20 @@
     </a>
 
     <a class="card" href="weapon-editor.html">
-      <div class="shot"><img src="/images/previews/preview-brm-q34.png" alt="武器编辑器" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>·</span>'"></div>
+      <div class="shot"><img src="/images/previews/preview-weapon.png" alt="武器编辑器" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>·</span>'"></div>
       <div class="bd">
         <h3>武器编辑器</h3>
         <p><b>武器是独立路线</b>：不跟人物建模走（没有骨架），在自己的坐标系里建（握把在原点）。
-           设<b>挂载数</b>（单手/双手）、<b>种类</b>（刀/锤/枪/炮/盾/杖/链/箱）、<b>绑定的动作</b>，
-           存进 <code>NewlyAddedWeaponList/</code>，再绑定到角色武器池。</p>
-        <div class="k"><em>独立路线</em><em>挂载数</em><em>种类</em><em>动作绑定</em><em>WeaponAPI</em></div>
+           <b>共享武器库</b>（黑刃 / 巨炮 / 葱）一键<b>拆解成可编辑图元</b>，视口里拖动 / 旋转 / 增删，
+           再设<b>挂载数</b>（单手/双手）、<b>种类</b>（刀/锤/枪/炮/盾/杖/链/箱）与<b>动作模板</b>，
+           存进 <code>NewlyAddedWeaponList/</code>。</p>
+        <div class="k"><em>独立路线</em><em>共享武器库</em><em>拆解</em><em>视口编辑</em><em>建模流水线</em></div>
         <span class="go">进入 →</span>
       </div>
     </a>
 
     <a class="card" href="model-import.html">
-      <div class="shot"><img src="/images/previews/preview-brm-q34.png" alt="模型导入" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>·</span>'"></div>
+      <div class="shot"><img src="/images/previews/preview-import.png" alt="模型导入" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>·</span>'"></div>
       <div class="bd">
         <h3>模型导入</h3>
         <p>吃别的建模工具产物：<b>.vox</b>（VoxiGen / MagicaVoxel）逐体素解析后贪心合并成方块，
@@ -121,7 +122,7 @@
       <div class="shot contain"><img src="/images/ai/ref.svg" alt="REF" onerror="this.parentNode.innerHTML='<span class=&quot;ph&quot;>REF</span>'"></div>
       <div class="bd">
         <h3>EditorAPI 命令速查</h3>
-        <p>109 个命令的人读版清单：规格结构、四种图元、分区规则、参照图、导入、保存、质量门、显卡。</p>
+        <p>108 个命令的人读版清单：规格结构、四种图元、分区规则、参照图、导入、保存、质量门、显卡。</p>
         <div class="k"><em>命令表</em><em>字段说明</em><em>示例</em></div>
         <span class="go">查看速查 →</span>
       </div>
@@ -142,7 +143,7 @@
     <a href="docs.html#ai-workflow">AI 工作流<span>接管方式 / 当前 Agent / 接口边界</span></a>
     <a href="docs.html#ai-pipeline">AI 操作手册<span>27 步流水线 + 8 个质量门 + 反模式</span></a>
     <a href="docs.html#model-files">模型文件取用<span>★ AI 怎么直接拿到模型文件</span></a>
-    <a href="docs.html#editor-api">EditorAPI 速查<span>116 个命令</span></a>
+    <a href="docs.html#editor-api">EditorAPI 速查<span>108 个命令</span></a>
     <a href="docs.html#storage">存储与目录<span>三个目录 / 保存 / 缓存 / REST API</span></a>
     <a href="docs.html#gpu">显卡与故障排查<span>没有显卡怎么办</span></a>
     <a href="docs.html#troubleshooting">故障排查<span>照症状查</span></a>
